@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { ref, runTransaction, push, update, onValue, set, remove } from 'firebase/database';
+import { ref, runTransaction, push, update, onValue, set, remove, onDisconnect } from 'firebase/database';
 
 export default function ChanhDien({ currentUser, activeUsers }) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -68,6 +68,16 @@ export default function ChanhDien({ currentUser, activeUsers }) {
     };
   }, [currentUser.username]);
 
+  // Bảo vệ chống kẹt: Tự động giải phóng nếu biến currentIncenser bị treo quá 10 giây
+  useEffect(() => {
+    if (currentIncenser) {
+      const safetyTimer = setTimeout(() => {
+        remove(ref(db, 'global_state/currentIncenser'));
+      }, 10000);
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [currentIncenser]);
+
   // 4. Điều phối hàng đợi tự động
   useEffect(() => {
     if (!currentIncenser && queueList.length > 0) {
@@ -115,10 +125,9 @@ export default function ChanhDien({ currentUser, activeUsers }) {
     });
   };
 
-  // 5. Bấm dâng hương lấy trực tiếp từ ô textbox bên dưới
   const handleDangHuongClick = async () => {
-    if (isAnimating || myQueueNumber !== null || currentIncenser === currentUser.username) {
-      alert('Đạo hữu đã có trong hàng đợi hoặc đang dâng hương rồi!');
+    if (myQueueNumber !== null) {
+      alert('Đạo hữu đã có trong hàng đợi chờ dâng hương rồi!');
       return;
     }
 
@@ -138,9 +147,18 @@ export default function ChanhDien({ currentUser, activeUsers }) {
     });
   };
 
-  // Thực thi quá trình dâng hương (Tốc độ đi đã được điều chỉnh chậm rãi, uy nghiêm hơn: 2.2s)
+  const handleEmergencyReset = async () => {
+    await remove(ref(db, 'global_state/currentIncenser'));
+    await remove(ref(db, 'incense_queue'));
+    setIsAnimating(false);
+    alert('Đã dọn sạch hàng đợi và giải phóng trạng thái kẹt thành công!');
+  };
+
   const executeIncenseProcess = async (loiNguyen) => {
     setIsAnimating(true);
+
+    const currentIncenseRef = ref(db, 'global_state/currentIncenser');
+    onDisconnect(currentIncenseRef).remove();
 
     const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
     
@@ -164,7 +182,8 @@ export default function ChanhDien({ currentUser, activeUsers }) {
         status: 'Đang tịnh tâm' 
       });
 
-      await remove(ref(db, 'global_state/currentIncenser'));
+      await remove(currentIncenseRef);
+      onDisconnect(currentIncenseRef).cancel();
       setIsAnimating(false);
     }, 6000);
   };
@@ -182,17 +201,16 @@ export default function ChanhDien({ currentUser, activeUsers }) {
     setChatInput('');
   };
 
-
   const getAvatarIcon = (gender) => {
-  let imgPath = '/images/khac.png';
-  if (gender === 'nam') imgPath = '/images/nam.png';
-  if (gender === 'nu') imgPath = '/images/nu.png';
+    let imgPath = '/images/khac.png';
+    if (gender === 'nam') imgPath = '/images/nam.png';
+    if (gender === 'nu') imgPath = '/images/nu.png';
 
-  return <img src={imgPath} alt="avatar" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />;
-};
+    return <img src={imgPath} alt="avatar" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />;
+  };
+
   return (
     <div style={styles.container}>
-      {/* KHUNG CẢNH CHÁNH ĐIỆN GIẢ 3D */}
       <div style={styles.templeScene}>
         <div style={styles.glowEffect}></div>
 
@@ -243,7 +261,6 @@ export default function ChanhDien({ currentUser, activeUsers }) {
                 ...styles.character,
                 left: `${user.x || 50}%`,
                 top: topPos,
-                // Đã chỉnh tốc độ đi chậm rãi, từ tốn hơn (2.2 giây)
                 transition: 'all 2.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
@@ -257,7 +274,6 @@ export default function ChanhDien({ currentUser, activeUsers }) {
         })}
       </div>
 
-      {/* THANH ĐIỀU KHIỂN HÀNH ĐỘNG & Ô NHẬP LỜI CẦU NGUYỆN */}
       <div style={styles.actionPanel}>
         <div style={styles.controls}>
           <button onClick={handleGoMo} style={{ ...styles.moBtn, opacity: canGoMo ? 1 : 0.6 }}>
@@ -274,9 +290,15 @@ export default function ChanhDien({ currentUser, activeUsers }) {
               ? `⏳ Đang đợi (Số ${myQueueNumber})` 
               : '🕯️ DÂNG HƯƠNG CẦU AN'}
           </button>
+
+          {/* CHỈ HIỂN THỊ NÚT XÓA KẸT CHO TÀI KHOẢN ADMIN (thay 'tien' bằng username của bạn) */}
+          {currentUser.username === 'nguyen' && (
+            <button onClick={handleEmergencyReset} style={styles.resetBtn} title="Bấm nếu bị kẹt hệ thống dâng hương">
+              🛠️ Xóa kẹt
+            </button>
+          )}
         </div>
 
-        {/* Khung chọn câu mẫu & nhập lời cầu nguyện */}
         <div style={styles.loiNguyetBox}>
           <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '5px' }}>
             ✨ Chọn nhanh lời cầu nguyện hoặc tự gõ:
@@ -297,7 +319,6 @@ export default function ChanhDien({ currentUser, activeUsers }) {
         </div>
       </div>
 
-      {/* KHUNG CHAT NỘI BỘ DƯỚI CÙNG */}
       <div style={styles.chatContainer}>
         <div style={styles.chatMessages} ref={chatScrollRef}>
           {chatMessages.map((msg, idx) => (
@@ -420,9 +441,10 @@ const styles = {
   charName: { fontSize: '11px', color: '#f1f5f9', fontWeight: 'bold', marginTop: '2px', textShadow: '0 1px 3px rgba(0,0,0,0.9)' },
   
   actionPanel: { marginTop: '12px', backgroundColor: '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #334155' },
-  controls: { display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '10px' },
-  moBtn: { backgroundColor: '#b45309', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(180, 83, 9, 0.4)' },
-  huongBtn: { backgroundColor: '#047857', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(4, 120, 87, 0.4)' },
+  controls: { display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '10px', flexWrap: 'wrap' },
+  moBtn: { backgroundColor: '#b45309', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(180, 83, 9, 0.4)' },
+  huongBtn: { backgroundColor: '#047857', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(4, 120, 87, 0.4)' },
+  resetBtn: { backgroundColor: '#475569', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' },
 
   loiNguyetBox: { display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #334155', paddingTop: '10px' },
   suggestChips: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
