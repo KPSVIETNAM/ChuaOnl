@@ -23,7 +23,7 @@ export default function Auth({ onLoginSuccess }) {
       username: cleanUser,
       password: password,
       fullName: fullName,
-      gender: gender, // Lưu giới tính: 'nam', 'nu', 'khac'
+      gender: gender,
       totalCongDuc: 0,
     };
 
@@ -61,7 +61,17 @@ export default function Auth({ onLoginSuccess }) {
   return (
     <div style={styles.loginContainer}>
       <div style={styles.loginBox}>
-        <h1 style={{ color: '#ffb703', margin: '0 0 10px 0' }}>🏮 CHÙA ONLINE 🏮</h1>
+        
+        {/* Đã sửa phần tiêu đề logo để không bị rớt dòng chữ đè lên nhau */}
+        <div style={styles.logoContainer}>
+          <div style={styles.logoTopRow}>
+            <span style={styles.lantern}>🏮</span>
+            <h1 style={styles.titleChua}>CHÙA</h1>
+            <span style={styles.lantern}>🏮</span>
+          </div>
+          <h1 style={styles.titleOnline}>ONLINE</h1>
+        </div>
+
         <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
           {authMode === 'login' ? 'Đăng nhập vào Chánh Điện' : 'Tạo tài khoản mới'}
         </p>
@@ -127,7 +137,15 @@ export default function Auth({ onLoginSuccess }) {
 
 const styles = {
   loginContainer: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#0f172a', fontFamily: 'sans-serif' },
-  loginBox: { backgroundColor: '#1e293b', padding: '30px', borderRadius: '12px', textAlign: 'center', width: '380px', border: '1px solid #334155' },
+  loginBox: { backgroundColor: '#1e293b', padding: '30px', borderRadius: '12px', textAlign: 'center', width: '380px', border: '1px solid #334155', boxSizing: 'border-box' },
+  
+  // Style mới cho cụm tiêu đề logo
+  logoContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '8px' },
+  logoTopRow: { display: 'flex', alignItems: 'center', gap: '10px' },
+  titleChua: { color: '#ffb703', margin: '0', fontSize: '26px', letterSpacing: '2px' },
+  titleOnline: { color: '#ffb703', margin: '0', fontSize: '30px', letterSpacing: '3px', lineHeight: '1.1' },
+  lantern: { fontSize: '22px' },
+
   input: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #475569', marginBottom: '12px', boxSizing: 'border-box', backgroundColor: '#0f172a', color: '#fff' },
   button: { width: '100%', padding: '12px', borderRadius: '6px', backgroundColor: '#b45309', color: '#fff', fontWeight: 'bold', border: 'none', cursor: 'pointer' }
 };

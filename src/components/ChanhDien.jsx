@@ -182,14 +182,14 @@ export default function ChanhDien({ currentUser, activeUsers }) {
     setChatInput('');
   };
 
-  const getAvatarIcon = (gender) => {
-    switch (gender) {
-      case 'nam': return '👨‍🦲';
-      case 'nu': return '👩‍🦲';
-      default: return '🧘';
-    }
-  };
 
+  const getAvatarIcon = (gender) => {
+  let imgPath = '/images/khac.png';
+  if (gender === 'nam') imgPath = '/images/nam.png';
+  if (gender === 'nu') imgPath = '/images/nu.png';
+
+  return <img src={imgPath} alt="avatar" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />;
+};
   return (
     <div style={styles.container}>
       {/* KHUNG CẢNH CHÁNH ĐIỆN GIẢ 3D */}
