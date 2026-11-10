@@ -406,7 +406,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           isolation: isolate;
           border: 1px solid rgba(232,189,112,.35);
           border-radius: 12px;
-          background-image: linear-gradient(180deg, rgba(13,17,27,.12), rgba(13,17,27,.16) 48%, rgba(13,17,27,.58)), url('/images/chinhdien.pngg');
+          background-image: linear-gradient(180deg, rgba(13,17,27,.12), rgba(13,17,27,.16) 48%, rgba(13,17,27,.58)), url('/images/chinhdien.png');
           background-size: cover;
           background-position: center 38%;
           box-shadow: inset 0 0 55px rgba(0,0,0,.35);
