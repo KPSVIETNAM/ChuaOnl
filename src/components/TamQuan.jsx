@@ -19,12 +19,12 @@ export default function TamQuan({ currentUser, onNavigate }) {
         <div 
           style={{
             ...styles.gateItem,
-            transform: hoveredGate === 'tinhtam' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
-            opacity: hoveredGate === 'tinhtam' ? 1 : 0.35,
+            transform: hoveredGate === 'TinhTamDien' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
+            opacity: hoveredGate === 'TinhTamDien' ? 1 : 0.35,
           }}
-          onMouseEnter={() => setHoveredGate('tinhtam')}
+          onMouseEnter={() => setHoveredGate('TinhTamDien')}
           onMouseLeave={() => setHoveredGate(null)}
-          onClick={() => onNavigate('tinhtam')}
+          onClick={() => onNavigate('TinhTamDien')}
         >
           <span style={styles.gateIcon}>🧘</span>
           <h3 style={styles.gateTitle}>Tịnh Tâm Điện</h3>
@@ -51,12 +51,12 @@ export default function TamQuan({ currentUser, onNavigate }) {
         <div 
           style={{
             ...styles.gateItem,
-            transform: hoveredGate === 'tangkinhcac' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
-            opacity: hoveredGate === 'tangkinhcac' ? 1 : 0.35,
+            transform: hoveredGate === 'TangKinhCac' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
+            opacity: hoveredGate === 'TangKinhCac' ? 1 : 0.35,
           }}
-          onMouseEnter={() => setHoveredGate('tangkinhcac')}
+          onMouseEnter={() => setHoveredGate('TangKinhCac')}
           onMouseLeave={() => setHoveredGate(null)}
-          onClick={() => onNavigate('tangkinhcac')}
+          onClick={() => onNavigate('TangKinhCac')}
         >
           <span style={styles.gateIcon}>📖</span>
           <h3 style={styles.gateTitle}>Tàng Kinh Các</h3>
