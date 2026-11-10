@@ -14,6 +14,7 @@ import Leaderboard from './Leaderboard';
 import DangHuong from './rituals/DangHuong';
 import DangHoa from './rituals/DangHoa';
 import DenHoaSen from './rituals/DenHoaSen';
+import ThinhChuong from './rituals/ThinhChuong';
 
 export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onBackToTamQuan, onLogout }) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -114,6 +115,9 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
       switch (type) {
         case 'hoa':
           DangHoa.executeRitual(username, fullName, () => setIsAnimating(false));
+          break;
+        case 'chuong':
+          ThinhChuong.executeRitual(username, fullName, () => setIsAnimating(false));
           break;
         case 'den':
           DenHoaSen.executeRitual(username, fullName, nextPerson.loiNguyen, () => setIsAnimating(false));
@@ -253,9 +257,9 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
             <DangHoa currentUser={currentUser} queueList={queueList} setNotice={setNotice} />
             
             <DenHoaSen currentUser={currentUser} queueList={queueList} loiNguyetInput={loiNguyetInput} setNotice={setNotice} />
-
+            
             {/* Chừa chỗ sẵn sàng cho các tính năng sắp tới */}
-            {/* <ThinhChuong currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> */}
+            <ThinhChuong currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> 
             {/* <DocKinh currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> */}
           </div>
 
