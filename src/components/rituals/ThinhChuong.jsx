@@ -53,7 +53,7 @@ export default function ThinhChuong({ currentUser, queueList = [], loiNguyetInpu
 // Hàm thực thi khi đến lượt thỉnh chuông trên chánh điện
 ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) => {
   // Phát âm thanh thỉnh chuông
-  const audio = new Audio('/audio/thinhchuong.mp3');
+  const audio = new Audio('/audio/Tiengchuong.mp3');
   audio.currentTime = 0;
   audio.play().catch(() => {});
 
