@@ -81,9 +81,9 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
     chuongEl.id = 'scene-chuong-effect';
     chuongEl.style.cssText = `
       position: absolute;
-      top: 40%;
+      top: 35%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0.7);
       z-index: 5;
       pointer-events: none;
       display: flex;
