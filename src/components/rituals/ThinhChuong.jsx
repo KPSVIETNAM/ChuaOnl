@@ -34,7 +34,7 @@ export default function ThinhChuong({ currentUser, queueList = [], loiNguyetInpu
       time: new Date().toLocaleTimeString(),
     });
 
-    setNotice('Đã thêm đạo hữu vào hàng đợi Thỉnh chuông.');
+    // setNotice('Đã thêm đạo hữu vào hàng đợi Thỉnh chuông.');
   };
 
   return (

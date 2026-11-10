@@ -259,7 +259,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
             <DenHoaSen currentUser={currentUser} queueList={queueList} loiNguyetInput={loiNguyetInput} setNotice={setNotice} />
             
             {/* Chừa chỗ sẵn sàng cho các tính năng sắp tới */}
-            <ThinhChuong currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> 
+            <ThinhChuong currentUser={currentUser} queueList={queueList}  loiNguyetInput={loiNguyetInput} setNotice={setNotice} /> 
             {/* <DocKinh currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> */}
           </div>
 

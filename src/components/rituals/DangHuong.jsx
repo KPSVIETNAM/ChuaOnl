@@ -34,7 +34,7 @@ export default function DangHuong({ currentUser, queueList = [], loiNguyetInput 
       time: new Date().toLocaleTimeString(),
     });
 
-    setNotice('Đã thêm đạo hữu vào hàng đợi Dâng hương.');
+    // setNotice('Đã thêm đạo hữu vào hàng đợi Dâng hương.');
   };
 
   return (

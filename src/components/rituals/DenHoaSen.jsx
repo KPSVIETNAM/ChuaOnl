@@ -34,7 +34,7 @@ export default function DenHoaSen({ currentUser, queueList = [], loiNguyetInput 
       time: new Date().toLocaleTimeString(),
     });
 
-    setNotice('Đã thêm đạo hữu vào hàng đợi dâng Đèn hoa sen.');
+    // setNotice('Đã thêm đạo hữu vào hàng đợi dâng Đèn hoa sen.');
   };
 
   return (

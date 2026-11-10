@@ -34,7 +34,7 @@ export default function DangHoa({ currentUser, queueList = [], activeUsers = {},
       time: new Date().toLocaleTimeString(),
     });
 
-    setNotice('Đã thêm đạo hữu vào hàng đợi Dâng hoa.');
+    // setNotice('Đã thêm đạo hữu vào hàng đợi Dâng hoa.');
   };
 
   // 2. Logic thực thi khi đến lượt lên chánh điện (Được gọi từ ChanhDien)
