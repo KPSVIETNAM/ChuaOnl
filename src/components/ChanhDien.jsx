@@ -10,9 +10,9 @@ import {
   remove,
   onDisconnect,
 } from 'firebase/database';
-import Leaderboard from './Leaderboard';
+import Leaderboard from './Leaderboard'; // Đảm bảo đường dẫn import đúng file Leaderboard của bạn
 
-export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onBackToTamQuan, onLogout }) {
+export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [] }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [dotCount, setDotCount] = useState(1);
   const [canGoMo, setCanGoMo] = useState(true);
@@ -141,8 +141,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     push(ref(db, 'logs'), {
       text: `${fullName} đã xếp hàng chờ dâng hương.`,
       time: new Date().toLocaleTimeString(),
-    });
-    setNotice('Đã thêm bạn vào hàng đợi dâng hương.');
+    }); 
   };
 
   const handleEmergencyReset = async () => {
@@ -226,16 +225,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
   return (
     <main className="chanh-dien-container">
-      {/* THANH ĐIỀU HƯỚNG GÓC TRÊN BÊN PHẢI */}
-      <div className="top-nav-bar">
-        <button type="button" className="nav-btn" onClick={onBackToTamQuan}>
-          ← Cổng Tam Quan
-        </button>
-        <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
-          🚪 Thoát tài khoản
-        </button>
-      </div>
-
       {/* CỘT TRÁI: Không gian điện thờ chính & Các nút hành động */}
       <div className="left-column">
         <section className="temple-scene" aria-label="Không gian chánh điện">
@@ -342,8 +331,10 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
       {/* CỘT PHẢI: Bảng Công Đức, Nhật Ký & Khung Chat */}
       <div className="right-column">
+        {/* Tích hợp Leaderboard (Bảng công đức & Nhật ký) */}
         <Leaderboard allUsers={allUsers} logs={logs} />
 
+        {/* Khung chat được chuyển sang bên phải ở dưới */}
         <section className="community-chat" aria-label="Trò chuyện cộng đồng">
           <header className="chat-heading">
             <div className="chat-heading-icon">💬</div>
@@ -408,37 +399,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
           border-radius: 16px;
           box-sizing: border-box;
           display: flex;
-          flex-wrap: wrap;
           gap: 15px;
-          position: relative;
-        }
-        .top-nav-bar {
-          width: 100%;
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          margin-bottom: 5px;
-        }
-        .nav-btn {
-          padding: 6px 14px;
-          background: #334155;
-          color: #f8fafc;
-          border: 1px solid #475569;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .nav-btn:hover {
-          background: #475569;
-        }
-        .logout-btn {
-          background: #7f1d1d;
-          border-color: #991b1b;
-        }
-        .logout-btn:hover {
-          background: #991b1b;
         }
         .left-column {
           flex: 2;
