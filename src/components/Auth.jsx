@@ -14,49 +14,65 @@ export default function Auth({ onLoginSuccess }) {
     const cleanUser = username.trim().toLowerCase();
     if (!cleanUser || !password || !fullName) return alert('Vui lòng điền đủ thông tin!');
 
-    const userRef = ref(db, `users/${cleanUser}`);
-    const snapshot = await get(userRef);
+    try {
+      const userRef = ref(db, `users/${cleanUser}`);
+      const snapshot = await get(userRef);
 
-    if (snapshot.exists()) return alert('Tài khoản đã tồn tại!');
+      if (snapshot.exists()) return alert('Tài khoản đã tồn tại!');
 
-    const newUser = {
-      username: cleanUser,
-      password: password,
-      fullName: fullName,
-      gender: gender,
-      totalCongDuc: 0,
-    };
+      const newUser = {
+        username: cleanUser,
+        password: password,
+        fullName: fullName,
+        gender: gender,
+        totalCongDuc: 0,
+      };
 
-    await set(userRef, newUser);
-    alert('Đăng ký thành công! Hãy đăng nhập.');
-    setAuthMode('login');
+      await set(userRef, newUser);
+      alert('Đăng ký thành công! Hãy đăng nhập.');
+      setAuthMode('login');
+    } catch (error) {
+      console.error("Lỗi đăng ký:", error);
+      alert("Đăng ký thất bại, hãy kiểm tra lại kết nối hoặc Console (F12).");
+    }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const cleanUser = username.trim().toLowerCase();
-    const userRef = ref(db, `users/${cleanUser}`);
-    const snapshot = await get(userRef);
+    if (!cleanUser || !password) return alert('Vui lòng nhập tài khoản và mật khẩu!');
 
-    if (!snapshot.exists()) return alert('Tài khoản không tồn tại!');
+    try {
+      const userRef = ref(db, `users/${cleanUser}`);
+      const snapshot = await get(userRef);
 
-    const userData = snapshot.val();
-    if (userData.password !== password) return alert('Sai mật khẩu!');
+      if (!snapshot.exists()) return alert('Tài khoản không tồn tại!');
 
-    const onlineRef = ref(db, `online_users/${cleanUser}`);
-    const initialPos = {
-      fullName: userData.fullName,
-      gender: userData.gender || 'nam',
-      status: 'Đang tịnh tâm 🙏',
-      x: Math.floor(Math.random() * 70) + 15,
-      isIncensing: false
-    };
+      const userData = snapshot.val();
+      if (userData.password !== password) return alert('Sai mật khẩu!');
 
-    await set(onlineRef, initialPos);
-    onDisconnect(onlineRef).remove();
+      const onlineRef = ref(db, `online_users/${cleanUser}`);
+      const initialPos = {
+        fullName: userData.fullName,
+        gender: userData.gender || 'nam',
+        status: 'Đang tịnh tâm 🙏',
+        x: Math.floor(Math.random() * 70) + 15,
+        isIncensing: false
+      };
 
-    // Truyền dữ liệu user lên component cha để hiển thị trang Tam Quan
-    onLoginSuccess(userData);
+      await set(onlineRef, initialPos);
+      onDisconnect(onlineRef).remove();
+
+      // Kiểm tra xem component cha có truyền hàm onLoginSuccess không
+      if (typeof onLoginSuccess === 'function') {
+        onLoginSuccess(userData);
+      } else {
+        console.error("onLoginSuccess không phải là một hàm! Hãy kiểm tra component cha.");
+      }
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      alert("Đăng nhập thất bại, hãy kiểm tra lại Firebase Rules hoặc Console (F12).");
+    }
   };
 
   return (
@@ -145,7 +161,7 @@ const styles = {
   bgOverlay: {
     position: 'absolute',
     inset: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)', // Làm mờ tối nền để nổi bật khung đăng nhập
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     zIndex: 1
   },
   loginBox: { 
