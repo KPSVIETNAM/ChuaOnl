@@ -4,8 +4,8 @@ import { ref, onValue } from 'firebase/database';
 import Auth from './components/Auth';
 import TamQuan from './components/TamQuan';
 import ChanhDien from './components/ChanhDien';
-import TinhTamDien from './components/TinhTamDien';
-import TangKinhCac from './components/TangKinhCac'; 
+// import TinhTamDien from './components/TinhTamDien';
+// import TangKinhCac from './components/TangKinhCac'; 
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
