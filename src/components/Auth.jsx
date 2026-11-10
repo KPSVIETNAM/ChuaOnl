@@ -55,14 +55,14 @@ export default function Auth({ onLoginSuccess }) {
     await set(onlineRef, initialPos);
     onDisconnect(onlineRef).remove();
 
+    // Truyền dữ liệu user lên component cha để hiển thị trang Tam Quan
     onLoginSuccess(userData);
   };
 
   return (
     <div style={styles.loginContainer}>
+      <div style={styles.bgOverlay} />
       <div style={styles.loginBox}>
-        
-        {/* Đã sửa phần tiêu đề logo để không bị rớt dòng chữ đè lên nhau */}
         <div style={styles.logoContainer}>
           <div style={styles.logoTopRow}>
             <span style={styles.lantern}>🏮</span>
@@ -73,7 +73,7 @@ export default function Auth({ onLoginSuccess }) {
         </div>
 
         <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
-          {authMode === 'login' ? 'Đăng nhập vào Chánh Điện' : 'Tạo tài khoản mới'}
+          {authMode === 'login' ? 'Đăng nhập vào Tam Quan' : 'Tạo tài khoản mới'}
         </p>
 
         <form onSubmit={authMode === 'login' ? handleLogin : handleRegister}>
@@ -119,7 +119,7 @@ export default function Auth({ onLoginSuccess }) {
           />
 
           <button type="submit" style={styles.button}>
-            {authMode === 'login' ? 'Vào Chánh Điện' : 'Tạo Tài Khoản'}
+            {authMode === 'login' ? 'Vào Cổng Tam Quan' : 'Tạo Tài Khoản'}
           </button>
         </form>
 
@@ -136,16 +136,40 @@ export default function Auth({ onLoginSuccess }) {
 }
 
 const styles = {
-  loginContainer: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#0f172a', fontFamily: 'sans-serif' },
-  loginBox: { backgroundColor: '#1e293b', padding: '30px', borderRadius: '12px', textAlign: 'center', width: '380px', border: '1px solid #334155', boxSizing: 'border-box' },
-  
-  // Style mới cho cụm tiêu đề logo
+  loginContainer: { 
+    position: 'relative',
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '100vh', 
+    backgroundImage: "url('/images/Congtamquan.jpg')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    fontFamily: 'sans-serif' 
+  },
+  bgOverlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)', // Làm mờ tối nền để nổi bật khung đăng nhập
+    zIndex: 1
+  },
+  loginBox: { 
+    position: 'relative',
+    zIndex: 2,
+    backgroundColor: '#1e293b', 
+    padding: '30px', 
+    borderRadius: '12px', 
+    textAlign: 'center', 
+    width: '380px', 
+    border: '1px solid #334155', 
+    boxSizing: 'border-box',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+  },
   logoContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '8px' },
   logoTopRow: { display: 'flex', alignItems: 'center', gap: '10px' },
   titleChua: { color: '#ffb703', margin: '0', fontSize: '26px', letterSpacing: '2px' },
   titleOnline: { color: '#ffb703', margin: '0', fontSize: '30px', letterSpacing: '3px', lineHeight: '1.1' },
   lantern: { fontSize: '22px' },
-
   input: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #475569', marginBottom: '12px', boxSizing: 'border-box', backgroundColor: '#0f172a', color: '#fff' },
   button: { width: '100%', padding: '12px', borderRadius: '6px', backgroundColor: '#b45309', color: '#fff', fontWeight: 'bold', border: 'none', cursor: 'pointer' }
 };
