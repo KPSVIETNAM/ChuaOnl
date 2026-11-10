@@ -24,7 +24,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
 
   // [BẠN CÓ THỂ THAY ĐỔI LINK SÁCH Ở ĐÂY]
   const bookLinks = [
-    { title: '📖 Kinh Vu Lan Báo Hiếu', url: '/books/VuLanBaohieu.text' },
+    { title: '📖 Kinh Vu Lan Báo Hiếu', url: '/books/VuLanBaohieu.txt' },
     { title: '📖 Kinh Phổ Môn', url: '#' },
     { title: '📖 Kinh Kim Cương', url: '#' },
     { title: '📖 Sổ tay Tịnh tâm hành trì', url: '#' },
