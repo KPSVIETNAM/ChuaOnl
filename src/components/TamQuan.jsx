@@ -8,9 +8,8 @@ export default function TamQuan({ currentUser, onNavigate }) {
       {/* Lời chào trang trọng ở phía trên */}
       <div style={styles.headerBox}>
         <div style={styles.welcomeText}>
-          A di đà Phật, chào mừng đạo hữu <span style={{ color: '#ffb703' }}>{currentUser?.fullName || currentUser?.username}</span> đến với cửa thiền.
-        </div>
-        <div style={styles.subText}>Rà chuột và chọn lối đi để tiếp tục hành trình:</div>
+          A di đà Phật, chào mừng <span style={{ color: '#ffb703' }}>{currentUser?.fullName || currentUser?.username}</span> đến với KPS Viet Nam.
+        </div> 
       </div>
 
       {/* Chia màn hình thành 3 cột bấm chọn phủ kín */}
