@@ -70,12 +70,7 @@ export default function Auth({ onLoginSuccess }) {
             <span style={styles.lantern}>🏮</span>
           </div>
           <h1 style={styles.titleOnline}>ONLINE v1.1</h1>
-        </div>
-
-        <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
-          {authMode === 'login' ? 'Đăng nhập vào Tam Quan' : 'Tạo tài khoản mới'}
-        </p>
-
+        </div>  
         <form onSubmit={authMode === 'login' ? handleLogin : handleRegister}>
           {authMode === 'register' && (
             <>
