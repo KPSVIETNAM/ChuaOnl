@@ -235,9 +235,8 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
       <section className="temple-scene" aria-label="Không gian chánh điện">
         <div className="scene-vignette" />
         <div className="scene-heading">
-          <span>🪷</span> ĐẠI HÙNG BỬU ĐIỆN <span>🪷</span>
+          <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
         </div>
-        <div className="altar-caption">Một phút lắng lòng, gửi chút bình an</div>
 
         {Object.entries(activeUsers).map(([activeUsername, user]) => {
           const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
@@ -267,11 +266,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
       </section>
 
       <section className="action-section" aria-label="Các hoạt động tại chánh điện">
-        <div className="section-heading">
-          <div>
-            <h2>Hoạt động</h2>
-            <p>Chọn một hoạt động để thực hiện</p>
-          </div>
+        <div className="section-heading" style={{ justifyContent: 'flex-end', marginBottom: '10px' }}>
           {myQueueNumber !== null && (
             <span className="queue-pill">Đang chờ · #{myQueueNumber}</span>
           )}
@@ -292,8 +287,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           ))}
         </div>
 
-        <div className="prayer-box">
-          <label htmlFor="prayer-message">Lời nguyện của bạn</label>
+        <div className="prayer-box"> 
           <div className="prayer-suggestions">
             {[
               ['🕊️ Bình an', 'Cầu bình an, vạn sự hanh thông'],
@@ -330,8 +324,9 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
             Công cụ quản trị · Giải phóng hàng đợi
           </button>
         )}
+        
         {notice && (
-          <div className="notice" role="status">
+          <div className="notice bottom-right-notice" role="status">
             <span>{notice}</span>
             <button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button>
           </div>
@@ -401,16 +396,17 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           border: 1px solid #34394a;
           border-radius: 16px;
           box-sizing: border-box;
+          position: relative;
         }
         .temple-scene {
-          height: clamp(340px, 48vw, 510px);
-          min-height: 340px;
+          height: clamp(380px, 48vw, 510px);
+          min-height: 380px;
           position: relative;
           overflow: hidden;
           isolation: isolate;
           border: 1px solid rgba(232,189,112,.35);
           border-radius: 12px;
-          background-image: linear-gradient(180deg, rgba(13,17,27,.12), rgba(13,17,27,.16) 48%, rgba(13,17,27,.58)), url('/images/chinhdien.jpg');
+          background-image: linear-gradient(180deg, rgba(13,17,27,.12), rgba(13,17,27,.16) 48%, rgba(13,17,27,.58)), url('/images/chinhdien.pngg');
           background-size: cover;
           background-position: center 43%;
           box-shadow: inset 0 0 55px rgba(0,0,0,.35);
@@ -432,10 +428,8 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
         .scene-online:first-letter { color:#73d69a; }
         .incense-glow { position:absolute; left:50%; top:48%; color:rgba(255,245,220,.7); font-size:38px; transform:translateX(-50%); animation:incenseFloat 2.2s ease-in-out infinite; pointer-events:none; }
         @keyframes incenseFloat { 0%{opacity:0;transform:translate(-50%,8px) scale(.8)} 50%{opacity:.7} 100%{opacity:0;transform:translate(-50%,-42px) scale(1.5)} }
-        .action-section,.community-chat { margin-top:12px; padding:14px; border:1px solid #34394a; border-radius:12px; background:#202737; }
+        .action-section,.community-chat { margin-top:12px; padding:14px; border:1px solid #34394a; border-radius:12px; background:#202737; position: relative; }
         .section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
-        .section-heading h2,.chat-heading h2 { margin:0; color:#f4dfb8; font-size:15px; }
-        .section-heading p,.chat-heading p { margin:3px 0 0; color:var(--muted); font-size:11px; }
         .queue-pill { padding:5px 9px; color:#ffe1a5; background:#60431f; border-radius:20px; font-size:11px; white-space:nowrap; }
         .action-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }
         .action-item { min-width:0; min-height:72px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:7px 3px; color:#eadfcf; background:#171f2d; border:1px solid #3a4354; border-radius:9px; cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
@@ -455,6 +449,14 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
         .incense-button:hover { background:#b47b3e; }
         .admin-reset { margin-top:9px; padding:6px 9px; color:#e6c7a5; background:#3d3030; border:1px solid #74504a; border-radius:6px; font-size:10px; cursor:pointer; }
         .notice { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:9px; padding:8px 10px; color:#f5dfb8; background:#3b3428; border:1px solid #66553b; border-radius:7px; font-size:11px; }
+        .bottom-right-notice {
+          position: absolute;
+          bottom: 12px;
+          right: 14px;
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+          max-width: 320px;
+        }
         .notice button { color:inherit; background:none; border:0; font-size:18px; cursor:pointer; }
         .chat-heading { display:flex; align-items:center; gap:10px; padding-bottom:11px; border-bottom:1px solid #394254; }
         .chat-heading-icon { width:35px; height:35px; display:grid; place-items:center; flex:none; background:#343044; border-radius:10px; font-size:19px; }
@@ -489,6 +491,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           .prayer-actions { align-items:stretch; flex-direction:column; }
           .incense-button { width:100%; }
           .chat-messages { height:210px; }
+          .bottom-right-notice { bottom: 8px; right: 8px; left: 8px; max-width: none; }
         }
         @media (max-width:360px) {
           .action-label { font-size:8px; }
