@@ -241,7 +241,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
         {Object.entries(activeUsers).map(([activeUsername, user]) => {
           const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
           const isWaiting = queueIndex !== -1;
-          const topPosition = user.isIncensing ? '58%' : '85%';
+          const topPosition = user.isIncensing ? '58%' : '95%';
           let status = '';
 
           if (user.isIncensing) status = user.status || 'Đang dâng hương';
