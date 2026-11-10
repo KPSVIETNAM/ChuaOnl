@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../../firebase';
+import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
 
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
