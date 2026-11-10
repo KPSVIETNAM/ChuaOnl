@@ -14,8 +14,7 @@ export default function App() {
   // Dữ liệu realtime từ Firebase
   const [activeUsers, setActiveUsers] = useState({});
   const [allUsers, setAllUsers] = useState({});
-  const [logs, setLogs] = useState([]);
-  const [totalDangHuongGlobal, setTotalDangHuongGlobal] = useState(0);
+  const [logs, setLogs] = useState([]); 
 
   // Lắng nghe người đang online
   useEffect(() => {
@@ -40,12 +39,7 @@ export default function App() {
       const data = snapshot.val() || {};
       const logList = Object.values(data).slice(-30); // Lấy 30 log gần nhất
       setLogs(logList);
-    });
-
-    const globalDangHuongRef = ref(db, 'global_stats/totalDangHuongToanCty');
-    const unsubscribeDangHuong = onValue(globalDangHuongRef, (snapshot) => {
-      setTotalDangHuongGlobal(snapshot.val() || 0);
-    });
+    }); 
 
     return () => {
       unsubscribeLogs();
@@ -109,10 +103,7 @@ export default function App() {
           </button>
 
           {/* Các thông số thống kê */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', color: '#f7dfad', background: '#0f172a', padding: '5px 10px', borderRadius: '20px', border: '1px solid #384255' }}>
-              🕯️ Tổng dâng hương: <b style={{ color: '#fff' }}>{totalDangHuongGlobal}</b>
-            </span>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}> 
             <span style={{ fontSize: '12px', color: '#f7dfad', background: '#0f172a', padding: '5px 10px', borderRadius: '20px', border: '1px solid #384255' }}>
               🪵 Tổng công đức: <b style={{ color: '#fff' }}>{totalCongDucToanCty}</b>
             </span>
