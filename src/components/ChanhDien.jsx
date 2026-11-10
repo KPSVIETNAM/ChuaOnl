@@ -205,7 +205,14 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     if (gender === 'nu') imgPath = '/images/nu.png';
     return <img src={imgPath} alt="" className="cd-avatar" />;
   };
-
+// Tự động ẩn thông báo sau 4 giây
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => {
+      setNotice('');
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const showComingSoon = (feature) => {
     setNotice(`${feature}: đang được phát triển.`);
   };
