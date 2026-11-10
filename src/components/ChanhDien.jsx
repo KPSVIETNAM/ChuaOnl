@@ -10,9 +10,9 @@ import {
   remove,
   onDisconnect,
 } from 'firebase/database';
-import Leaderboard from './Leaderboard'; // Đảm bảo đường dẫn import đúng file Leaderboard của bạn
+import Leaderboard from './Leaderboard';
 
-export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onLogout }) {
+export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onBackToTamQuan, onLogout }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [dotCount, setDotCount] = useState(1);
   const [canGoMo, setCanGoMo] = useState(true);
@@ -26,7 +26,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [notice, setNotice] = useState('');
-  const [totalDangHuongGlobal, setTotalDangHuongGlobal] = useState(0);
   const chatScrollRef = useRef(null);
 
   const username = currentUser?.username;
@@ -50,7 +49,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
   const getDots = () => '.'.repeat(dotCount);
 
-  // Lắng nghe tổng số dâng hương toàn hệ thống và hàng đợi
+  // Lắng nghe hàng đợi dâng hương và người đang dâng hương
   useEffect(() => {
     if (!username) return undefined;
 
@@ -66,12 +65,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
       setMyQueueNumber(myIndex === -1 ? null : myIndex + 1);
     });
 
-    // Lắng nghe tổng số lượt dâng hương tích lũy (nếu có trên db, hoặc đếm từ logs/global_stats)
-    const globalDangHuongRef = ref(db, 'global_stats/totalDangHuongToanCty');
-    const unsubscribeDangHuong = onValue(globalDangHuongRef, (snapshot) => {
-      setTotalDangHuongGlobal(snapshot.val() || 0);
-    });
-
     const currentRef = ref(db, 'global_state/currentIncenser');
     const unsubscribeCurrent = onValue(currentRef, (snapshot) => {
       setCurrentIncenser(snapshot.val());
@@ -79,7 +72,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
     return () => {
       unsubscribeQueue();
-      unsubscribeDangHuong();
       unsubscribeCurrent();
     };
   }, [username]);
@@ -149,7 +141,8 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     push(ref(db, 'logs'), {
       text: `${fullName} đã xếp hàng chờ dâng hương.`,
       time: new Date().toLocaleTimeString(),
-    }); 
+    });
+    setNotice('Đã thêm bạn vào hàng đợi dâng hương.');
   };
 
   const handleEmergencyReset = async () => {
@@ -170,9 +163,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
       x: 50,
       status: `“${loiNguyen}”`,
     });
-
-    // Tăng tổng số lượt dâng hương toàn hệ thống
-    runTransaction(ref(db, 'global_stats/totalDangHuongToanCty'), (count) => (count || 0) + 1);
 
     push(ref(db, 'logs'), {
       text: `${fullName} dâng hương: “${loiNguyen}”`,
@@ -221,12 +211,6 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     setNotice(`${feature}: đang được phát triển.`);
   };
 
-  // Tính tổng số công đức toàn công ty từ allUsers
-  const totalCongDucToanCty = Object.values(allUsers).reduce(
-    (sum, user) => sum + (user.totalCongDuc || 0),
-    0
-  );
-
   const actions = [
     { icon: '🕯️', label: 'Dâng hương', active: true, onClick: handleDangHuongClick },
     { icon: '🪵', label: 'Gõ mõ', active: true, onClick: handleGoMo },
@@ -242,179 +226,170 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
   return (
     <main className="chanh-dien-container">
-      {/* THANH THỐNG KÊ & ĐIỀU HƯỚNG PHÍA TRÊN */}
-      <header className="temple-top-bar">
-        <div className="stats-group">
-          <div className="stat-pill">
-            <span>🕯️ Tổng dâng hương:</span> <b>{totalDangHuongGlobal}</b>
+      {/* THANH ĐIỀU HƯỚNG GÓC TRÊN BÊN PHẢI */}
+      <div className="top-nav-bar">
+        <button type="button" className="nav-btn" onClick={onBackToTamQuan}>
+          ← Cổng Tam Quan
+        </button>
+        <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
+          🚪 Thoát tài khoản
+        </button>
+      </div>
+
+      {/* CỘT TRÁI: Không gian điện thờ chính & Các nút hành động */}
+      <div className="left-column">
+        <section className="temple-scene" aria-label="Không gian chánh điện">
+          <div className="scene-vignette" />
+          <div className="scene-heading">
+            <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
           </div>
-          <div className="stat-pill">
-            <span>🪵 Tổng công đức:</span> <b>{totalCongDucToanCty}</b>
+
+          {Object.entries(activeUsers).map(([activeUsername, user]) => {
+            const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
+            const isWaiting = queueIndex !== -1;
+            const topPosition = user.isIncensing ? '58%' : '85%';
+            let status = '';
+
+            if (user.isIncensing) status = user.status || 'Đang dâng hương';
+            else if (isWaiting) status = `Đang đợi dâng hương · Số ${queueIndex + 1}`;
+            else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
+
+            return (
+              <div
+                key={activeUsername}
+                className="temple-character"
+                style={{ left: `${user.x || 50}%`, top: topPosition }}
+              >
+                <div className="character-status">{status}</div>
+                {getAvatarIcon(user.gender)}
+                <div className="character-name">{user.fullName || activeUsername}</div>
+              </div>
+            );
+          })}
+
+          {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>}
+          <div className="scene-online">● {Object.keys(activeUsers).length} người đang hiện diện</div>
+        </section>
+
+        <section className="action-section" aria-label="Các hoạt động tại chánh điện">
+          <div className="section-heading" style={{ justifyContent: 'flex-end', marginBottom: '10px' }}>
+            {myQueueNumber !== null && (
+              <span className="queue-pill">Đang chờ · #{myQueueNumber}</span>
+            )}
           </div>
-        </div>
-        {onLogout && (
-          <button type="button" className="logout-button" onClick={onLogout}>
-            🚪 Thoát tài khoản
-          </button>
-        )}
-      </header>
 
-      <div className="chanh-dien-content-wrapper">
-        {/* CỘT TRÁI: Không gian điện thờ chính & Các nút hành động */}
-        <div className="left-column">
-          <section className="temple-scene" aria-label="Không gian chánh điện">
-            <div className="scene-vignette" />
-            <div className="scene-heading">
-              <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
-            </div>
+          <div className="action-grid">
+            {actions.map((action) => (
+              <button
+                type="button"
+                key={action.label}
+                className={`action-item ${action.active ? 'action-active' : 'action-coming'}`}
+                onClick={action.onClick}
+                title={action.label}
+              >
+                <span className="action-icon">{action.icon}</span>
+                <span className="action-label">{action.label}</span>
+              </button>
+            ))}
+          </div>
 
-            {Object.entries(activeUsers).map(([activeUsername, user]) => {
-              const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
-              const isWaiting = queueIndex !== -1;
-              const topPosition = user.isIncensing ? '58%' : '85%';
-              let status = '';
-
-              if (user.isIncensing) status = user.status || 'Đang dâng hương';
-              else if (isWaiting) status = `Đang đợi dâng hương · Số ${queueIndex + 1}`;
-              else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
-
-              return (
-                <div
-                  key={activeUsername}
-                  className="temple-character"
-                  style={{ left: `${user.x || 50}%`, top: topPosition }}
-                >
-                  <div className="character-status">{status}</div>
-                  {getAvatarIcon(user.gender)}
-                  <div className="character-name">{user.fullName || activeUsername}</div>
-                </div>
-              );
-            })}
-
-            {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>}
-            <div className="scene-online">● {Object.keys(activeUsers).length} người đang hiện diện</div>
-          </section>
-
-          <section className="action-section" aria-label="Các hoạt động tại chánh điện">
-            <div className="section-heading" style={{ justifyContent: 'flex-end', marginBottom: '10px' }}>
-              {myQueueNumber !== null && (
-                <span className="queue-pill">Đang chờ · #{myQueueNumber}</span>
-              )}
-            </div>
-
-            <div className="action-grid">
-              {actions.map((action) => (
-                <button
-                  type="button"
-                  key={action.label}
-                  className={`action-item ${action.active ? 'action-active' : 'action-coming'}`}
-                  onClick={action.onClick}
-                  title={action.label}
-                >
-                  <span className="action-icon">{action.icon}</span>
-                  <span className="action-label">{action.label}</span>
+          <div className="prayer-box"> 
+            <div className="prayer-suggestions">
+              {[
+                ['🕊️ Bình an', 'Cầu bình an, vạn sự hanh thông'],
+                ['🏡 Gia đạo', 'Cầu gia đạo hưng thịnh, hạnh phúc'],
+                ['🌿 Sức khỏe', 'Cầu sức khỏe dồi dào, thân tâm an lạc'],
+                ['💼 Công việc', 'Cầu công việc thuận lợi, mọi sự hanh thông'],
+              ].map(([label, value]) => (
+                <button type="button" key={label} onClick={() => setLoiNguyetInput(value)}>
+                  {label}
                 </button>
               ))}
             </div>
-
-            <div className="prayer-box"> 
-              <div className="prayer-suggestions">
-                {[
-                  ['🕊️ Bình an', 'Cầu bình an, vạn sự hanh thông'],
-                  ['🏡 Gia đạo', 'Cầu gia đạo hưng thịnh, hạnh phúc'],
-                  ['🌿 Sức khỏe', 'Cầu sức khỏe dồi dào, thân tâm an lạc'],
-                  ['💼 Công việc', 'Cầu công việc thuận lợi, mọi sự hanh thông'],
-                ].map(([label, value]) => (
-                  <button type="button" key={label} onClick={() => setLoiNguyetInput(value)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <input
-                id="prayer-message"
-                value={loiNguyetInput}
-                onChange={(event) => setLoiNguyetInput(event.target.value)}
-                maxLength={160}
-                placeholder="Nhập lời nguyện..."
-              />
-              <div className="prayer-actions">
-                <span className="helper-text">
-                  {myQueueNumber !== null
-                    ? `Bạn đang ở vị trí số ${myQueueNumber} trong hàng đợi.`
-                    : 'Lời nguyện sẽ được gửi khi bạn chọn Dâng hương.'}
-                </span>
-                <button type="button" className="incense-button" onClick={handleDangHuongClick}>
-                  {myQueueNumber !== null ? '⏳ Đang chờ dâng hương' : '🕯️ Dâng hương cầu an'}
-                </button>
-              </div>
-            </div>
-
-            {currentUser?.username === 'nguyen' && (
-              <button type="button" className="admin-reset" onClick={handleEmergencyReset}>
-                Công cụ quản trị · Giải phóng hàng đợi
+            <input
+              id="prayer-message"
+              value={loiNguyetInput}
+              onChange={(event) => setLoiNguyetInput(event.target.value)}
+              maxLength={160}
+              placeholder="Nhập lời nguyện..."
+            />
+            <div className="prayer-actions">
+              <span className="helper-text">
+                {myQueueNumber !== null
+                  ? `Bạn đang ở vị trí số ${myQueueNumber} trong hàng đợi.`
+                  : 'Lời nguyện sẽ được gửi khi bạn chọn Dâng hương.'}
+              </span>
+              <button type="button" className="incense-button" onClick={handleDangHuongClick}>
+                {myQueueNumber !== null ? '⏳ Đang chờ dâng hương' : '🕯️ Dâng hương cầu an'}
               </button>
-            )}
-            
-            {notice && (
-              <div className="notice bottom-right-notice" role="status">
-                <span>{notice}</span>
-                <button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button>
-              </div>
-            )}
-          </section>
-        </div>
-
-        {/* CỘT PHẢI: Bảng Công Đức, Nhật Ký & Khung Chat */}
-        <div className="right-column">
-          <Leaderboard allUsers={allUsers} logs={logs} />
-
-          <section className="community-chat" aria-label="Trò chuyện cộng đồng">
-            <header className="chat-heading">
-              <div className="chat-heading-icon">💬</div>
-              <div>
-                <h2>Góc trò chuyện</h2>
-                <p>Cùng chia sẻ lời chúc bình an</p>
-              </div>
-              <span className="chat-live"><i /> Trực tuyến</span>
-            </header>
-
-            <div className="chat-messages" ref={chatScrollRef} aria-live="polite">
-              {chatMessages.length === 0 ? (
-                <div className="chat-empty">
-                  <span>🪷</span>
-                  <p>Chưa có lời nhắn nào.</p>
-                </div>
-              ) : (
-                chatMessages.map((message) => {
-                  const isMine = message.username === username;
-                  return (
-                    <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>
-                      <div className="message-meta">
-                        <strong>{message.sender || 'Đạo hữu'}</strong>
-                        <time>{message.time || ''}</time>
-                      </div>
-                      <div className="message-bubble">{message.text}</div>
-                    </article>
-                  );
-                })
-              )}
             </div>
+          </div>
 
-            <form className="chat-form" onSubmit={handleSendChat}>
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
-                maxLength={300}
-                placeholder="Viết lời nhắn..."
-                aria-label="Nội dung tin nhắn"
-              />
-              <button type="submit" disabled={!chatInput.trim()} aria-label="Gửi tin nhắn">
-                Gửi <span>➤</span>
-              </button>
-            </form>
-          </section>
-        </div>
+          {currentUser?.username === 'nguyen' && (
+            <button type="button" className="admin-reset" onClick={handleEmergencyReset}>
+              Công cụ quản trị · Giải phóng hàng đợi
+            </button>
+          )}
+          
+          {notice && (
+            <div className="notice bottom-right-notice" role="status">
+              <span>{notice}</span>
+              <button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* CỘT PHẢI: Bảng Công Đức, Nhật Ký & Khung Chat */}
+      <div className="right-column">
+        <Leaderboard allUsers={allUsers} logs={logs} />
+
+        <section className="community-chat" aria-label="Trò chuyện cộng đồng">
+          <header className="chat-heading">
+            <div className="chat-heading-icon">💬</div>
+            <div>
+              <h2>Góc trò chuyện</h2>
+              <p>Cùng chia sẻ lời chúc bình an</p>
+            </div>
+            <span className="chat-live"><i /> Trực tuyến</span>
+          </header>
+
+          <div className="chat-messages" ref={chatScrollRef} aria-live="polite">
+            {chatMessages.length === 0 ? (
+              <div className="chat-empty">
+                <span>🪷</span>
+                <p>Chưa có lời nhắn nào.</p>
+              </div>
+            ) : (
+              chatMessages.map((message) => {
+                const isMine = message.username === username;
+                return (
+                  <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>
+                    <div className="message-meta">
+                      <strong>{message.sender || 'Đạo hữu'}</strong>
+                      <time>{message.time || ''}</time>
+                    </div>
+                    <div className="message-bubble">{message.text}</div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <form className="chat-form" onSubmit={handleSendChat}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              maxLength={300}
+              placeholder="Viết lời nhắn..."
+              aria-label="Nội dung tin nhắn"
+            />
+            <button type="submit" disabled={!chatInput.trim()} aria-label="Gửi tin nhắn">
+              Gửi <span>➤</span>
+            </button>
+          </form>
+        </section>
       </div>
 
       <style>{`
@@ -433,54 +408,37 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
           border-radius: 16px;
           box-sizing: border-box;
           display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .temple-top-bar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 8px 14px;
-          background: #202737;
-          border: 1px solid #34394a;
-          border-radius: 10px;
           flex-wrap: wrap;
-          gap: 10px;
-        }
-        .stats-group {
-          display: flex;
           gap: 15px;
-          flex-wrap: wrap;
+          position: relative;
         }
-        .stat-pill {
+        .top-nav-bar {
+          width: 100%;
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-bottom: 5px;
+        }
+        .nav-btn {
+          padding: 6px 14px;
+          background: #334155;
+          color: #f8fafc;
+          border: 1px solid #475569;
+          border-radius: 6px;
           font-size: 12px;
-          color: #f7dfad;
-          background: #171f2d;
-          padding: 5px 10px;
-          border-radius: 20px;
-          border: 1px solid #384255;
-        }
-        .stat-pill b {
-          color: #fff;
-        }
-        .logout-button {
-          padding: 6px 12px;
-          background: #7f1d1d;
-          color: #fca5a5;
-          border: 1px solid #991b1b;
-          border-radius: 7px;
-          font-size: 12px;
-          font-weight: 600;
+          font-weight: bold;
           cursor: pointer;
           transition: background 0.2s;
         }
-        .logout-button:hover {
-          background: #991b1b;
-          color: #fff;
+        .nav-btn:hover {
+          background: #475569;
         }
-        .chanh-dien-content-wrapper {
-          display: flex;
-          gap: 15px;
+        .logout-btn {
+          background: #7f1d1d;
+          border-color: #991b1b;
+        }
+        .logout-btn:hover {
+          background: #991b1b;
         }
         .left-column {
           flex: 2;
@@ -569,7 +527,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
         .chat-form button { flex:none; min-width:58px; padding:0 10px; color:#211a10; background:#e1b86f; border:0; border-radius:7px; font-size:11px; font-weight:800; cursor:pointer; }
         .chat-form button:disabled { opacity:.45; cursor:not-allowed; }
         @media (max-width:900px) {
-          .chanh-dien-content-wrapper { flex-direction: column; }
+          .chanh-dien-container { flex-direction: column; }
         }
       `}</style>
     </main>
