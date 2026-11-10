@@ -198,17 +198,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
   };
 
   return (
-    <main className="chanh-dien-container">
-      {/* THANH ĐIỀU HƯỚNG GÓC TRÊN BÊN PHẢI */}
-      <div className="top-nav-bar">
-        <button type="button" className="nav-btn" onClick={onBackToTamQuan}>
-          ← Cổng Tam Quan
-        </button>
-        <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
-          🚪 Thoát tài khoản
-        </button>
-      </div>
-
+    <main className="chanh-dien-container"> 
       {/* CỘT TRÁI: Không gian điện thờ chính & Các nút hành động */}
       <div className="left-column">
         <section className="temple-scene" aria-label="Không gian chánh điện">
