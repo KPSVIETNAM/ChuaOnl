@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { db } from '../../firebase';
 import { ref, push, update, remove, onDisconnect } from 'firebase/database';
 
@@ -49,6 +49,7 @@ export default function ThinhChuong({ currentUser, queueList = [], loiNguyetInpu
     </button>
   );
 }
+
 // Hàm thực thi khi đến lượt thỉnh chuông trên chánh điện
 ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) => {
   // 1. Phát âm thanh thỉnh chuông
@@ -72,7 +73,7 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
     time: new Date().toLocaleTimeString(),
   });
 
-  // 3. Tạo hiệu ứng hình ảnh chuông và gợn sóng lan tỏa trong khung chánh điện (.temple-scene)
+  // 3. Tạo hiệu ứng hình ảnh chuông và gợn sóng lan tỏa
   const templeScene = document.querySelector('.temple-scene');
   let chuongEl = document.getElementById('scene-chuong-effect');
 
@@ -89,6 +90,7 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: opacity 4s ease-in-out;
     `;
 
     // Thêm các lớp gợn sóng (ripple rings)
@@ -101,7 +103,7 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
         border: 2px solid rgba(232, 189, 112, 0.7);
         border-radius: 50%;
         animation: chuongRipple 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
-        animation-delay: ${i * 1}s;
+        animation-delay: ${i}s;
         opacity: 0;
       `;
       chuongEl.appendChild(wave);
@@ -154,19 +156,20 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
     }
   }, 50);
 
-  // 4. Kéo dài thời gian hành lễ lên 10 giây, sau đó mờ dần và thu hồi hiệu ứng
+  // 4. Quá trình mờ dần từ giây thứ 4 đến giây thứ 8
+  setTimeout(() => {
+    if (chuongEl) {
+      chuongEl.style.opacity = '0'; // Bắt đầu mờ dần từ giây thứ 4
+    }
+  }, 4000);
+
+  // 5. Tổng thời gian hiệu ứng chuông là 10 giây (hoàn tất mờ hẳn ở khoảng giây thứ 8 đến 10)
   setTimeout(async () => {
     if (chuongEl) {
-      const imgTag = chuongEl.querySelector('img');
-      if (imgTag) {
-        imgTag.style.opacity = '0';
-        imgTag.style.transform = 'scale(0.6)';
-      }
-      chuongEl.style.opacity = '0';
-      chuongEl.style.transition = 'opacity 1.5s ease-in-out';
-      setTimeout(() => chuongEl.remove(), 1500);
+      chuongEl.remove();
     }
 
+    // Đưa nhân vật trở về vị trí phía dưới (tịnh tâm)
     const randomX = Math.floor(Math.random() * 70) + 15;
     await update(userOnlineRef, {
       isIncensing: false,
@@ -174,8 +177,12 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
       status: 'Đang tịnh tâm 🙏',
     });
 
-    await remove(currentIncenseRef);
-    onDisconnect(currentIncenseRef).cancel();
-    if (onComplete) onComplete();
-  }, 10000); // 10000ms = 10 giây
+    // 6. Đợi thêm 2 giây để icon người di chuyển hoàn tất về phía dưới rồi mới giải phóng hàng đợi
+    setTimeout(async () => {
+      await remove(currentIncenseRef);
+      onDisconnect(currentIncenseRef).cancel();
+      if (onComplete) onComplete();
+    }, 2000);
+
+  }, 12000); // 12000ms = 12 giây thời lượng chuông
 };
