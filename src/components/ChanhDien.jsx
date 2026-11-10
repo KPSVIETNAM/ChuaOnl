@@ -10,13 +10,9 @@ import {
   remove,
   onDisconnect,
 } from 'firebase/database';
+import Leaderboard from './Leaderboard'; // Đảm bảo đường dẫn import đúng file Leaderboard của bạn
 
-/**
- * Trang Chánh điện - giữ nguyên các nhánh Firebase đang dùng trong bản cũ:
- * incense_queue, global_state/currentIncenser, online_users, room_chats,
- * logs và users.
- */
-export default function ChanhDien({ currentUser, activeUsers = {} }) {
+export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [] }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [dotCount, setDotCount] = useState(1);
   const [canGoMo, setCanGoMo] = useState(true);
@@ -35,7 +31,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  // Nhạc nền: trình duyệt có thể chặn autoplay cho đến khi người dùng tương tác.
+  // Nhạc nền
   useEffect(() => {
     const bgAudio = new Audio('/audio/amnen.mp3');
     bgAudio.loop = true;
@@ -53,7 +49,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
 
   const getDots = () => '.'.repeat(dotCount);
 
-  // Lắng nghe hàng đợi dâng hương và người đang dâng hương.
+  // Lắng nghe hàng đợi dâng hương và người đang dâng hương
   useEffect(() => {
     if (!username) return undefined;
 
@@ -80,7 +76,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
     };
   }, [username]);
 
-  // Lắng nghe chat realtime.
+  // Lắng nghe chat realtime
   useEffect(() => {
     const chatRef = ref(db, 'room_chats');
     return onValue(chatRef, (snapshot) => {
@@ -98,7 +94,6 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
     }
   }, [chatMessages]);
 
-  // Điều phối hàng đợi theo cơ chế cũ của ứng dụng.
   useEffect(() => {
     if (!username || currentIncenser || queueList.length === 0) return;
 
@@ -109,7 +104,6 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
     if (nextPerson.username === username) {
       executeIncenseProcess(nextPerson.loiNguyen);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIncenser, queueList, username]);
 
   const handleGoMo = () => {
@@ -231,164 +225,173 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
   ];
 
   return (
-    <main className="chanh-dien">
-      <section className="temple-scene" aria-label="Không gian chánh điện">
-        <div className="scene-vignette" />
-        <div className="scene-heading">
-          <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
-        </div>
+    <main className="chanh-dien-container">
+      {/* CỘT TRÁI: Không gian điện thờ chính & Các nút hành động */}
+      <div className="left-column">
+        <section className="temple-scene" aria-label="Không gian chánh điện">
+          <div className="scene-vignette" />
+          <div className="scene-heading">
+            <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
+          </div>
 
-        {Object.entries(activeUsers).map(([activeUsername, user]) => {
-          const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
-          const isWaiting = queueIndex !== -1;
-          const topPosition = user.isIncensing ? '58%' : '95%';
-          let status = '';
+          {Object.entries(activeUsers).map(([activeUsername, user]) => {
+            const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
+            const isWaiting = queueIndex !== -1;
+            const topPosition = user.isIncensing ? '58%' : '85%';
+            let status = '';
 
-          if (user.isIncensing) status = user.status || 'Đang dâng hương';
-          else if (isWaiting) status = `Đang đợi dâng hương · Số ${queueIndex + 1}`;
-          else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
+            if (user.isIncensing) status = user.status || 'Đang dâng hương';
+            else if (isWaiting) status = `Đang đợi dâng hương · Số ${queueIndex + 1}`;
+            else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
 
-          return (
-            <div
-              key={activeUsername}
-              className="temple-character"
-              style={{ left: `${user.x || 50}%`, top: topPosition }}
-            >
-              <div className="character-status">{status}</div>
-              {getAvatarIcon(user.gender)}
-              <div className="character-name">{user.fullName || activeUsername}</div>
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={activeUsername}
+                className="temple-character"
+                style={{ left: `${user.x || 50}%`, top: topPosition }}
+              >
+                <div className="character-status">{status}</div>
+                {getAvatarIcon(user.gender)}
+                <div className="character-name">{user.fullName || activeUsername}</div>
+              </div>
+            );
+          })}
 
-        {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>}
-        <div className="scene-online">● {Object.keys(activeUsers).length} người đang hiện diện</div>
-      </section>
+          {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>}
+          <div className="scene-online">● {Object.keys(activeUsers).length} người đang hiện diện</div>
+        </section>
 
-      <section className="action-section" aria-label="Các hoạt động tại chánh điện">
-        <div className="section-heading" style={{ justifyContent: 'flex-end', marginBottom: '10px' }}>
-          {myQueueNumber !== null && (
-            <span className="queue-pill">Đang chờ · #{myQueueNumber}</span>
-          )}
-        </div>
+        <section className="action-section" aria-label="Các hoạt động tại chánh điện">
+          <div className="section-heading" style={{ justifyContent: 'flex-end', marginBottom: '10px' }}>
+            {myQueueNumber !== null && (
+              <span className="queue-pill">Đang chờ · #{myQueueNumber}</span>
+            )}
+          </div>
 
-        <div className="action-grid">
-          {actions.map((action) => (
-            <button
-              type="button"
-              key={action.label}
-              className={`action-item ${action.active ? 'action-active' : 'action-coming'}`}
-              onClick={action.onClick}
-              title={action.label}
-            >
-              <span className="action-icon">{action.icon}</span>
-              <span className="action-label">{action.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="prayer-box"> 
-          <div className="prayer-suggestions">
-            {[
-              ['🕊️ Bình an', 'Cầu bình an, vạn sự hanh thông'],
-              ['🏡 Gia đạo', 'Cầu gia đạo hưng thịnh, hạnh phúc'],
-              ['🌿 Sức khỏe', 'Cầu sức khỏe dồi dào, thân tâm an lạc'],
-              ['💼 Công việc', 'Cầu công việc thuận lợi, mọi sự hanh thông'],
-            ].map(([label, value]) => (
-              <button type="button" key={label} onClick={() => setLoiNguyetInput(value)}>
-                {label}
+          <div className="action-grid">
+            {actions.map((action) => (
+              <button
+                type="button"
+                key={action.label}
+                className={`action-item ${action.active ? 'action-active' : 'action-coming'}`}
+                onClick={action.onClick}
+                title={action.label}
+              >
+                <span className="action-icon">{action.icon}</span>
+                <span className="action-label">{action.label}</span>
               </button>
             ))}
           </div>
-          <input
-            id="prayer-message"
-            value={loiNguyetInput}
-            onChange={(event) => setLoiNguyetInput(event.target.value)}
-            maxLength={160}
-            placeholder="Nhập lời nguyện..."
-          />
-          <div className="prayer-actions">
-            <span className="helper-text">
-              {myQueueNumber !== null
-                ? `Bạn đang ở vị trí số ${myQueueNumber} trong hàng đợi.`
-                : 'Lời nguyện sẽ được gửi khi bạn chọn Dâng hương.'}
-            </span>
-            <button type="button" className="incense-button" onClick={handleDangHuongClick}>
-              {myQueueNumber !== null ? '⏳ Đang chờ dâng hương' : '🕯️ Dâng hương cầu an'}
-            </button>
-          </div>
-        </div>
 
-        {currentUser?.username === 'nguyen' && (
-          <button type="button" className="admin-reset" onClick={handleEmergencyReset}>
-            Công cụ quản trị · Giải phóng hàng đợi
-          </button>
-        )}
-        
-        {notice && (
-          <div className="notice bottom-right-notice" role="status">
-            <span>{notice}</span>
-            <button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button>
-          </div>
-        )}
-      </section>
-
-      <section className="community-chat" aria-label="Trò chuyện cộng đồng">
-        <header className="chat-heading">
-          <div className="chat-heading-icon">💬</div>
-          <div>
-            <h2>Góc trò chuyện</h2>
-            <p>Cùng thăm hỏi và chia sẻ những lời chúc bình an</p>
-          </div>
-          <span className="chat-live"><i /> Trực tuyến</span>
-        </header>
-
-        <div className="chat-messages" ref={chatScrollRef} aria-live="polite">
-          {chatMessages.length === 0 ? (
-            <div className="chat-empty">
-              <span>🪷</span>
-              <p>Chưa có lời nhắn nào. Hãy gửi lời chào đầu tiên.</p>
+          <div className="prayer-box"> 
+            <div className="prayer-suggestions">
+              {[
+                ['🕊️ Bình an', 'Cầu bình an, vạn sự hanh thông'],
+                ['🏡 Gia đạo', 'Cầu gia đạo hưng thịnh, hạnh phúc'],
+                ['🌿 Sức khỏe', 'Cầu sức khỏe dồi dào, thân tâm an lạc'],
+                ['💼 Công việc', 'Cầu công việc thuận lợi, mọi sự hanh thông'],
+              ].map(([label, value]) => (
+                <button type="button" key={label} onClick={() => setLoiNguyetInput(value)}>
+                  {label}
+                </button>
+              ))}
             </div>
-          ) : (
-            chatMessages.map((message) => {
-              const isMine = message.username === username;
-              return (
-                <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>
-                  <div className="message-meta">
-                    <strong>{message.sender || 'Đạo hữu'}</strong>
-                    <time>{message.time || ''}</time>
-                  </div>
-                  <div className="message-bubble">{message.text}</div>
-                </article>
-              );
-            })
-          )}
-        </div>
+            <input
+              id="prayer-message"
+              value={loiNguyetInput}
+              onChange={(event) => setLoiNguyetInput(event.target.value)}
+              maxLength={160}
+              placeholder="Nhập lời nguyện..."
+            />
+            <div className="prayer-actions">
+              <span className="helper-text">
+                {myQueueNumber !== null
+                  ? `Bạn đang ở vị trí số ${myQueueNumber} trong hàng đợi.`
+                  : 'Lời nguyện sẽ được gửi khi bạn chọn Dâng hương.'}
+              </span>
+              <button type="button" className="incense-button" onClick={handleDangHuongClick}>
+                {myQueueNumber !== null ? '⏳ Đang chờ dâng hương' : '🕯️ Dâng hương cầu an'}
+              </button>
+            </div>
+          </div>
 
-        <form className="chat-form" onSubmit={handleSendChat}>
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(event) => setChatInput(event.target.value)}
-            maxLength={300}
-            placeholder="Viết lời nhắn cho mọi người..."
-            aria-label="Nội dung tin nhắn"
-          />
-          <button type="submit" disabled={!chatInput.trim()} aria-label="Gửi tin nhắn">
-            Gửi <span>➤</span>
-          </button>
-        </form>
-        <div className="chat-footnote">Hãy trò chuyện văn minh và tôn trọng mọi người.</div>
-      </section>
+          {currentUser?.username === 'nguyen' && (
+            <button type="button" className="admin-reset" onClick={handleEmergencyReset}>
+              Công cụ quản trị · Giải phóng hàng đợi
+            </button>
+          )}
+          
+          {notice && (
+            <div className="notice bottom-right-notice" role="status">
+              <span>{notice}</span>
+              <button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* CỘT PHẢI: Bảng Công Đức, Nhật Ký & Khung Chat */}
+      <div className="right-column">
+        {/* Tích hợp Leaderboard (Bảng công đức & Nhật ký) */}
+        <Leaderboard allUsers={allUsers} logs={logs} />
+
+        {/* Khung chat được chuyển sang bên phải ở dưới */}
+        <section className="community-chat" aria-label="Trò chuyện cộng đồng">
+          <header className="chat-heading">
+            <div className="chat-heading-icon">💬</div>
+            <div>
+              <h2>Góc trò chuyện</h2>
+              <p>Cùng chia sẻ lời chúc bình an</p>
+            </div>
+            <span className="chat-live"><i /> Trực tuyến</span>
+          </header>
+
+          <div className="chat-messages" ref={chatScrollRef} aria-live="polite">
+            {chatMessages.length === 0 ? (
+              <div className="chat-empty">
+                <span>🪷</span>
+                <p>Chưa có lời nhắn nào.</p>
+              </div>
+            ) : (
+              chatMessages.map((message) => {
+                const isMine = message.username === username;
+                return (
+                  <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>
+                    <div className="message-meta">
+                      <strong>{message.sender || 'Đạo hữu'}</strong>
+                      <time>{message.time || ''}</time>
+                    </div>
+                    <div className="message-bubble">{message.text}</div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <form className="chat-form" onSubmit={handleSendChat}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              maxLength={300}
+              placeholder="Viết lời nhắn..."
+              aria-label="Nội dung tin nhắn"
+            />
+            <button type="submit" disabled={!chatInput.trim()} aria-label="Gửi tin nhắn">
+              Gửi <span>➤</span>
+            </button>
+          </form>
+        </section>
+      </div>
 
       <style>{`
-        .chanh-dien {
+        .chanh-dien-container {
           --gold: #e8bd70;
           --gold-light: #f7dfad;
           --ink: #f4ead8;
           --muted: #b9ad9b;
           width: 100%;
-          max-width: 1180px;
+          max-width: 1350px;
           margin: 0 auto;
           padding: 12px;
           color: var(--ink);
@@ -396,11 +399,26 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           border: 1px solid #34394a;
           border-radius: 16px;
           box-sizing: border-box;
-          position: relative;
+          display: flex;
+          gap: 15px;
+        }
+        .left-column {
+          flex: 2;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-width: 0;
+        }
+        .right-column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-width: 280px;
         }
         .temple-scene {
-          height: clamp(391px, 55.2vw, 586.5px);
-          min-height: 391px;
+          height: clamp(340px, 42vw, 480px);
+          min-height: 340px;
           position: relative;
           overflow: hidden;
           isolation: isolate;
@@ -419,7 +437,6 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           letter-spacing:2px; text-shadow:0 2px 8px #000; white-space:nowrap;
         }
         .scene-heading span { color:#f2c879; }
-        .altar-caption { position:absolute; top:47px; left:0; right:0; text-align:center; color:#fff1d2; font-size:12px; text-shadow:0 2px 5px #000; }
         .temple-character { position:absolute; z-index:2; transform:translate(-50%,-50%); min-width:64px; text-align:center; transition:top 2s ease,left 2s ease; }
         .character-status { display:inline-block; max-width:190px; margin-bottom:4px; padding:4px 7px; color:#ffe3a8; background:rgba(18,22,31,.88); border:1px solid rgba(232,189,112,.3); border-radius:7px; font-size:10px; line-height:1.35; white-space:normal; text-shadow:0 1px 2px #000; }
         .cd-avatar { display:block; width:32px; height:32px; margin:0 auto; object-fit:contain; filter:drop-shadow(0 2px 3px rgba(0,0,0,.65)); }
@@ -428,74 +445,51 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
         .scene-online:first-letter { color:#73d69a; }
         .incense-glow { position:absolute; left:50%; top:48%; color:rgba(255,245,220,.7); font-size:38px; transform:translateX(-50%); animation:incenseFloat 2.2s ease-in-out infinite; pointer-events:none; }
         @keyframes incenseFloat { 0%{opacity:0;transform:translate(-50%,8px) scale(.8)} 50%{opacity:.7} 100%{opacity:0;transform:translate(-50%,-42px) scale(1.5)} }
-        .action-section,.community-chat { margin-top:12px; padding:14px; border:1px solid #34394a; border-radius:12px; background:#202737; position: relative; }
+        .action-section, .community-chat { padding:14px; border:1px solid #34394a; border-radius:12px; background:#202737; position: relative; }
         .section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
         .queue-pill { padding:5px 9px; color:#ffe1a5; background:#60431f; border-radius:20px; font-size:11px; white-space:nowrap; }
         .action-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }
-        .action-item { min-width:0; min-height:72px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:7px 3px; color:#eadfcf; background:#171f2d; border:1px solid #3a4354; border-radius:9px; cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
+        .action-item { min-width:0; min-height:65px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:5px 2px; color:#eadfcf; background:#171f2d; border:1px solid #3a4354; border-radius:9px; cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
         .action-item:hover { background:#30394a; border-color:#b88d4e; transform:translateY(-1px); }
-        .action-icon { width:32px; height:32px; display:grid; place-items:center; font-size:27px; line-height:1; }
-        .action-label { max-width:100%; color:#e9ddca; font-size:10px; line-height:1.2; text-align:center; }
+        .action-icon { width:28px; height:28px; display:grid; place-items:center; font-size:22px; line-height:1; }
+        .action-label { max-width:100%; color:#e9ddca; font-size:9px; line-height:1.2; text-align:center; }
         .action-coming .action-label { color:#a99f91; }
-        .prayer-box { margin-top:12px; padding:11px; background:#171f2d; border:1px solid #384255; border-radius:9px; }
-        .prayer-box label { display:block; margin-bottom:7px; color:#f0d7a9; font-size:12px; font-weight:700; }
-        .prayer-suggestions { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-        .prayer-suggestions button { padding:5px 8px; color:#e9d2a8; background:#293347; border:1px solid #465064; border-radius:20px; font-size:10px; cursor:pointer; }
-        .prayer-box input,.chat-form input { min-width:0; width:100%; box-sizing:border-box; padding:10px 11px; color:#f7f0e5; background:#222d40; border:1px solid #465064; border-radius:7px; outline:none; font:inherit; font-size:12px; }
-        .prayer-box input:focus,.chat-form input:focus { border-color:#c59b5c; }
-        .prayer-actions { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:9px; }
-        .helper-text { color:#a99f91; font-size:10px; }
-        .incense-button { flex:none; padding:8px 12px; color:#fff8eb; background:#9a642d; border:0; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; }
+        .prayer-box { margin-top:10px; padding:10px; background:#171f2d; border:1px solid #384255; border-radius:9px; }
+        .prayer-suggestions { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:6px; }
+        .prayer-suggestions button { padding:4px 7px; color:#e9d2a8; background:#293347; border:1px solid #465064; border-radius:20px; font-size:9px; cursor:pointer; }
+        .prayer-box input, .chat-form input { min-width:0; width:100%; box-sizing:border-box; padding:8px 10px; color:#f7f0e5; background:#222d40; border:1px solid #465064; border-radius:7px; outline:none; font:inherit; font-size:11px; }
+        .prayer-box input:focus, .chat-form input:focus { border-color:#c59b5c; }
+        .prayer-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
+        .helper-text { color:#a99f91; font-size:9px; }
+        .incense-button { flex:none; padding:7px 10px; color:#fff8eb; background:#9a642d; border:0; border-radius:7px; font-size:10px; font-weight:700; cursor:pointer; }
         .incense-button:hover { background:#b47b3e; }
-        .admin-reset { margin-top:9px; padding:6px 9px; color:#e6c7a5; background:#3d3030; border:1px solid #74504a; border-radius:6px; font-size:10px; cursor:pointer; }
-        .notice { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:9px; padding:8px 10px; color:#f5dfb8; background:#3b3428; border:1px solid #66553b; border-radius:7px; font-size:11px; }
-        .bottom-right-notice {
-          position: absolute;
-          bottom: 12px;
-          right: 14px;
-          z-index: 10;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-          max-width: 320px;
-        }
+        .admin-reset { margin-top:8px; padding:6px 9px; color:#e6c7a5; background:#3d3030; border:1px solid #74504a; border-radius:6px; font-size:10px; cursor:pointer; }
+        .notice { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; padding:8px 10px; color:#f5dfb8; background:#3b3428; border:1px solid #66553b; border-radius:7px; font-size:11px; }
+        .bottom-right-notice { position: absolute; bottom: 12px; right: 14px; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.4); max-width: 320px; }
         .notice button { color:inherit; background:none; border:0; font-size:18px; cursor:pointer; }
-        .chat-heading { display:flex; align-items:center; gap:10px; padding-bottom:11px; border-bottom:1px solid #394254; }
-        .chat-heading-icon { width:35px; height:35px; display:grid; place-items:center; flex:none; background:#343044; border-radius:10px; font-size:19px; }
+        .chat-heading { display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:1px solid #394254; }
+        .chat-heading-icon { width:30px; height:30px; display:grid; place-items:center; flex:none; background:#343044; border-radius:8px; font-size:16px; }
         .chat-heading > div:nth-child(2) { flex:1; min-width:0; }
-        .chat-live { display:flex; align-items:center; gap:5px; color:#9ed6ae; font-size:10px; white-space:nowrap; }
-        .chat-live i { width:7px; height:7px; background:#62c783; border-radius:50%; }
-        .chat-messages { height:230px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:12px 3px; scroll-behavior:smooth; }
-        .chat-message { max-width:82%; align-self:flex-start; }
+        .chat-heading h2 { margin:0; color:#f4dfb8; font-size:13px; }
+        .chat-heading p { margin:2px 0 0; color:var(--muted); font-size:10px; }
+        .chat-live { display:flex; align-items:center; gap:4px; color:#9ed6ae; font-size:9px; white-space:nowrap; }
+        .chat-live i { width:6px; height:6px; background:#62c783; border-radius:50%; }
+        .chat-messages { height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:10px 2px; scroll-behavior:smooth; }
+        .chat-message { max-width:85%; align-self:flex-start; }
         .chat-message.my-message { align-self:flex-end; }
-        .message-meta { display:flex; align-items:center; gap:8px; margin:0 4px 4px; }
-        .message-meta strong { color:#e8c78e; font-size:10px; }
-        .message-meta time { color:#8e929d; font-size:9px; }
-        .message-bubble { padding:8px 10px; color:#eee6d9; background:#30394a; border:1px solid #424c60; border-radius:4px 11px 11px 11px; font-size:12px; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
-        .my-message .message-bubble { color:#fff0d5; background:#59452f; border-color:#7a6040; border-radius:11px 4px 11px 11px; }
+        .message-meta { display:flex; align-items:center; gap:6px; margin:0 3px 3px; }
+        .message-meta strong { color:#e8c78e; font-size:9px; }
+        .message-meta time { color:#8e929d; font-size:8px; }
+        .message-bubble { padding:7px 9px; color:#eee6d9; background:#30394a; border:1px solid #424c60; border-radius:4px 10px 10px 10px; font-size:11px; line-height:1.4; overflow-wrap:anywhere; white-space:pre-wrap; }
+        .my-message .message-bubble { color:#fff0d5; background:#59452f; border-color:#7a6040; border-radius:10px 4px 10px 10px; }
         .my-message .message-meta { justify-content:flex-end; }
-        .chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a99f91; text-align:center; font-size:11px; }
-        .chat-empty span { font-size:25px; }
-        .chat-form { display:flex; gap:8px; padding-top:10px; border-top:1px solid #394254; }
-        .chat-form button { flex:none; min-width:68px; padding:0 12px; color:#211a10; background:#e1b86f; border:0; border-radius:7px; font-size:12px; font-weight:800; cursor:pointer; }
+        .chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a99f91; text-align:center; font-size:10px; }
+        .chat-empty span { font-size:22px; }
+        .chat-form { display:flex; gap:6px; padding-top:8px; border-top:1px solid #394254; }
+        .chat-form button { flex:none; min-width:58px; padding:0 10px; color:#211a10; background:#e1b86f; border:0; border-radius:7px; font-size:11px; font-weight:800; cursor:pointer; }
         .chat-form button:disabled { opacity:.45; cursor:not-allowed; }
-        .chat-form button span { margin-left:3px; }
-        .chat-footnote { margin-top:7px; color:#888e9b; font-size:9px; text-align:center; }
-        @media (max-width:600px) {
-          .chanh-dien { padding:7px; border-radius:10px; }
-          .temple-scene { height:448.5px; min-height:368px; background-position:center center; }
-          .scene-heading { letter-spacing:1px; }
-          .action-section,.community-chat { padding:10px; }
-          .action-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; }
-          .action-item { min-height:65px; padding:5px 1px; }
-          .action-icon { width:32px; height:32px; font-size:25px; }
-          .action-label { font-size:9px; }
-          .prayer-actions { align-items:stretch; flex-direction:column; }
-          .incense-button { width:100%; }
-          .chat-messages { height:210px; }
-          .bottom-right-notice { bottom: 8px; right: 8px; left: 8px; max-width: none; }
-        }
-        @media (max-width:360px) {
-          .action-label { font-size:8px; }
-          .action-grid { gap:3px; }
+        @media (max-width:900px) {
+          .chanh-dien-container { flex-direction: column; }
         }
       `}</style>
     </main>
