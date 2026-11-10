@@ -114,10 +114,10 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
       switch (type) {
         case 'hoa':
-          DangHoa.executeRitual(username, fullName, () => setIsAnimating(false));
+          DangHoa.executeRitual(username, fullName, nextPerson.loiNguyen, () => setIsAnimating(false));
           break;
         case 'chuong':
-          ThinhChuong.executeRitual(username, fullName, () => setIsAnimating(false));
+          ThinhChuong.executeRitual(username, fullName, nextPerson.loiNguyen, () => setIsAnimating(false));
           break;
         case 'den':
           DenHoaSen.executeRitual(username, fullName, nextPerson.loiNguyen, () => setIsAnimating(false));
