@@ -69,7 +69,7 @@ export default function Auth({ onLoginSuccess }) {
             <h1 style={styles.titleChua}>CHÙA</h1>
             <span style={styles.lantern}>🏮</span>
           </div>
-          <h1 style={styles.titleOnline}>ONLINE</h1>
+          <h1 style={styles.titleOnline}>ONLINE v1.0</h1>
         </div>
 
         <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
