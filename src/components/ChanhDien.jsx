@@ -399,8 +399,8 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           position: relative;
         }
         .temple-scene {
-          height: clamp(380px, 48vw, 510px);
-          min-height: 380px;
+          height: clamp(391px, 55.2vw, 586.5px);
+          min-height: 391px;
           position: relative;
           overflow: hidden;
           isolation: isolate;
@@ -408,7 +408,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
           border-radius: 12px;
           background-image: linear-gradient(180deg, rgba(13,17,27,.12), rgba(13,17,27,.16) 48%, rgba(13,17,27,.58)), url('/images/chinhdien.pngg');
           background-size: cover;
-          background-position: center 43%;
+          background-position: center 38%;
           box-shadow: inset 0 0 55px rgba(0,0,0,.35);
         }
         .scene-vignette { position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,rgba(10,14,22,.18),transparent 35%,transparent 65%,rgba(10,14,22,.18)); }
@@ -481,7 +481,7 @@ export default function ChanhDien({ currentUser, activeUsers = {} }) {
         .chat-footnote { margin-top:7px; color:#888e9b; font-size:9px; text-align:center; }
         @media (max-width:600px) {
           .chanh-dien { padding:7px; border-radius:10px; }
-          .temple-scene { height:390px; min-height:320px; background-position:center center; }
+          .temple-scene { height:448.5px; min-height:368px; background-position:center center; }
           .scene-heading { letter-spacing:1px; }
           .action-section,.community-chat { padding:10px; }
           .action-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; }
