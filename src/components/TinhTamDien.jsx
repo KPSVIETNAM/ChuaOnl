@@ -20,19 +20,20 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  const [totalTinhTamCount, setTotalTinhTamCount] = useState(0);
+  const [totalTinhTamMinutes, setTotalTinhTamMinutes] = useState(0);
   const [myCongDuc, setMyCongDuc] = useState(0);
   
   const bgAudioRef = useRef(null);
   const moIntervalRef = useRef(null);
+  const minuteTimerRef = useRef(null);
 
-  // 1. Lắng nghe thống kê toàn hệ thống và cá nhân
+  // 1. Lắng nghe tổng số phút tịnh tâm toàn hệ thống và công đức cá nhân
   useEffect(() => {
     if (!username) return;
 
-    const tinhTamRef = ref(db, 'global_stats/totalTinhTamToanCty');
+    const tinhTamRef = ref(db, 'global_stats/totalTinhTamMinutesToanCty');
     const unsubTinhTam = onValue(tinhTamRef, (snapshot) => {
-      setTotalTinhTamCount(snapshot.val() || 0);
+      setTotalTinhTamMinutes(snapshot.val() || 0);
     });
 
     const myUserRef = ref(db, `users/${username}/totalCongDuc`);
@@ -46,11 +47,46 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     };
   }, [username]);
 
-  // 2. Quản lý Nhạc nền amnen.mp3 độc lập
+  // 2. Tự động cộng dồn 1 phút tịnh tâm cứ mỗi 60 giây khi user đang ở trong phòng
+  useEffect(() => {
+    if (!username) return;
+
+    minuteTimerRef.current = setInterval(() => {
+      runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1);
+    }, 60000); // 60.000ms = 1 phút
+
+    return () => {
+      if (minuteTimerRef.current) {
+        clearInterval(minuteTimerRef.current);
+        minuteTimerRef.current = null;
+      }
+    };
+  }, [username]);
+
+  // Hàm chuyển đổi tổng số phút thành định dạng: X ngày Y giờ Z phút W giây
+  const formatMinutesToDHMS = (totalMins) => {
+    if (!totalMins || totalMins <= 0) return '0 phút 0 giây';
+    
+    const totalSeconds = Math.floor(totalMins * 60);
+    const days = Math.floor(totalSeconds / (3600 * 24));
+    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    let parts = [];
+    if (days > 0) parts.push(`${days} ngày`);
+    if (hours > 0 || days > 0) parts.push(`${hours} giờ`);
+    if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes} phút`);
+    parts.push(`${seconds} giây`);
+
+    return parts.join(' ');
+  };
+
+  // 3. Quản lý Nhạc nền amnen.mp3 độc lập (volume = 0.4)
   useEffect(() => {
     bgAudioRef.current = new Audio('/audio/amnen.mp3');
     bgAudioRef.current.loop = true;
-    bgAudioRef.current.volume = 0.2;
+    bgAudioRef.current.volume = 0.4;
 
     if (isBgAudioPlaying) {
       bgAudioRef.current.play().catch(() => {});
@@ -64,7 +100,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 3. Quản lý Vòng lặp Gõ mõ tự động mỗi 4s độc lập
+  // 4. Quản lý Vòng lặp Gõ mõ tự động mỗi 4s độc lập
   useEffect(() => {
     if (isMoAutoPlaying) {
       startMoInterval();
@@ -89,7 +125,6 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     }
   };
 
-  // Hàm phát tiếng mõ kèm hiệu ứng gợn sóng lan tỏa
   const playMoSoundWithRipple = () => {
     const moAudio = new Audio('/audio/mo.mp3');
     moAudio.currentTime = 0;
@@ -98,7 +133,6 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     triggerRippleEffect();
   };
 
-  // Hiệu ứng gợn sóng tỏa ra từ khu vực trung tâm (hoặc banner tịnh tâm)
   const triggerRippleEffect = () => {
     const banner = document.querySelector('.tinh-tam-banner');
     if (!banner) return;
@@ -112,7 +146,6 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     }, 1500);
   };
 
-  // Nút gạt bật/tắt nhạc nền
   const toggleBgAudio = () => {
     if (!bgAudioRef.current) return;
     if (isBgAudioPlaying) {
@@ -126,14 +159,13 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     }
   };
 
-  // Nút gạt bật/tắt mõ tự động
   const toggleMoAuto = () => {
     const nextState = !isMoAutoPlaying;
     setIsMoAutoPlaying(nextState);
     localStorage.setItem(moKey, JSON.stringify(nextState));
   };
 
-  // 4. Gõ mõ thủ công: Phát âm thanh, tạo gợn sóng và RESET nhịp 4s của mõ tự động
+  // 5. Gõ mõ thủ công: Phát âm thanh, tạo gợn sóng và RESET nhịp 4s của mõ tự động, tích lũy công đức
   const handleManualGoMo = () => {
     if (!username) return;
 
@@ -155,7 +187,6 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
 
   return (
     <div className="tinh-tam-container">
-      {/* Các nút gạt điều khiển âm thanh riêng biệt */}
       <div className="tinh-tam-top-bar">
         <button onClick={toggleBgAudio} className={`audio-toggle-btn ${isBgAudioPlaying ? 'active' : 'muted'}`}>
           {isBgAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
@@ -178,17 +209,16 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
           />
         </div>
 
-        {/* Thống kê công đức bản thân & toàn đạo */}
+        {/* Thống kê công đức bản thân & Thời gian tịnh tâm toàn đạo dạng Ngày Giờ Phút Giây */}
         <div className="tinh-tam-stats-group">
           <div className="tinh-tam-stat-pill">
             <span>📿 Công đức của bạn:</span> <b>{myCongDuc}</b>
           </div>
           <div className="tinh-tam-stat-pill">
-            <span>🧘 Tổng lượt tịnh tâm toàn đạo:</span> <b>{totalTinhTamCount}</b>
+            <span>⏳ Thời gian tịnh tâm toàn đạo:</span> <b>{formatMinutesToDHMS(totalTinhTamMinutes)}</b>
           </div>
         </div>
 
-        {/* Nút gõ mõ thủ công */}
         <button onClick={handleManualGoMo} className="manual-momo-button">
           🪵 Gõ Mõ Tích Công Đức
         </button>
@@ -277,7 +307,6 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
           object-fit: cover;
           display: block;
         }
-        /* CSS Hiệu ứng gợn sóng lan tỏa */
         .ripple-ring {
           position: absolute;
           top: 50%;
@@ -368,7 +397,7 @@ TinhTamDien.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
 
   runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 1);
   runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 1);
-  runTransaction(ref(db, 'global_stats/totalTinhTamToanCty'), (count) => (count || 0) + 1);
+  runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1);
 
   setTimeout(async () => {
     const randomX = Math.floor(Math.random() * 70) + 15;
