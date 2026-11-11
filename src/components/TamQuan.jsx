@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function TamQuan({ currentUser, onNavigate }) {
+export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
   const [hoveredGate, setHoveredGate] = useState(null);
 
   return (
@@ -11,13 +11,29 @@ export default function TamQuan({ currentUser, onNavigate }) {
           A di đà Phật, chào mừng <span style={{ color: '#ffb703' }}>{currentUser?.fullName || currentUser?.username}</span> đến với KPS Việt Nam.
         </div>
       </div>
+
       {/* Nút thoát tài khoản */}
       <button 
         onClick={handleLogout} 
-        style={{ padding: '6px 12px', background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
+        style={{
+          position: 'absolute',
+          top: '30px',
+          right: '30px',
+          zIndex: 10,
+          padding: '6px 12px', 
+          background: '#7f1d1d', 
+          color: '#fca5a5', 
+          border: '1px solid #991b1b', 
+          borderRadius: '6px', 
+          cursor: 'pointer', 
+          fontWeight: 'bold', 
+          fontSize: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+        }}
       >
-        🚪Thoát TK <b>{currentUser?.fullName}</b> 
+        🚪 Thoát TK <b>{currentUser?.fullName}</b> 
       </button>
+
       {/* Vùng chứa 3 lối đi căn chỉnh đúng vị trí các cổng trên ảnh */}
       <div style={styles.gatesContainer}>
         
@@ -70,7 +86,8 @@ export default function TamQuan({ currentUser, onNavigate }) {
         </div> 
 
       </div>
-    {/* 4. Nút Kỳ Viện Caro (Đặt riêng dạng Badge/Đao đài nhỏ ở góc phải màn hình) */}
+
+      {/* 4. Nút Kỳ Viện Caro (Badge/Đao đài nhỏ ở góc phải màn hình) */}
       <div 
         style={{
           ...styles.caroWidget,
@@ -91,8 +108,6 @@ export default function TamQuan({ currentUser, onNavigate }) {
     </div>
   );
 }
-{/* Thêm ô Lối vào Caro trong gatesContainer của TamQuan.jsx */}
- 
 
 const styles = {
   container: {
