@@ -318,8 +318,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
           <header className="chat-heading">
             <div className="chat-heading-icon">💬</div>
             <div>
-              <h2>Góc trò chuyện</h2>
-              <p>Cùng chia sẻ lời chúc bình an</p>
+              <h2>Chia sẻ lời chúc bình an</h2>
             </div>
             <span className="chat-live"><i /> Trực tuyến</span>
           </header>
@@ -330,17 +329,15 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
                 <span>🪷</span>
                 <p>Chưa có lời nhắn nào.</p>
               </div>
-            ) : (
+            ) : (  
               chatMessages.map((message) => {
                 const isMine = message.username === username;
                 return (
-                  <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>
-                    <div className="message-meta">
-                      <strong>{message.sender || 'Đạo hữu'}</strong>
-                      <time>{message.time || ''}</time>
-                    </div>
-                    <div className="message-bubble">{message.text}</div>
-                  </article>
+                  <article key={message.id} className={`chat-message ${isMine ? 'my-message' : ''}`}>  
+                  <strong className="sender-name">{message.sender || 'Đạo hữu'}: </strong>
+                  <span className="message-text">{message.text}</span>
+                  {message.time && <time className="message-time">{message.time}</time>}
+                </article>
                 );
               })
             )}
