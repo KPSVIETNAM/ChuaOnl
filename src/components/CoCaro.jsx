@@ -1,41 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { ref, set, update, push, onValue, remove } from 'firebase/database';
+import { ref, set, update, push, onValue, remove, get } from 'firebase/database';
 
 const BOARD_SIZE = 15;
 
-export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBack }) {
+export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBack, roomId: initialRoomId }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  const [roomId, setRoomId] = useState('phong_chung'); // Mặc định phòng chung
+  const [roomId, setRoomId] = useState(initialRoomId || 'phong_chung');
   const [roomData, setRoomData] = useState(null);
+  const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); // Quản lý danh sách tất cả người chơi trong sảnh cờ
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // State cho khung chat riêng của phòng cờ
+  // Trạng thái cá nhân trong sảnh cờ: 'dang_doi', 'dang_tim_ghep', 'dang_dau'
+  const [myStatus, setMyStatus] = useState('dang_doi');
+
+  // Khung chat riêng trong phòng
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
 
-  // 1. Cập nhật trạng thái user online
+  // 1. Cập nhật trạng thái user online & trạng thái sảnh cờ lên Firebase
   useEffect(() => {
     if (!username) return;
     const userOnlineRef = ref(db, `online_users/${username}`);
-    update(userOnlineRef, { currentScreen: 'caro' });
+    update(userOnlineRef, { currentScreen: 'caro', caroStatus: 'dang_doi' });
+
+    // Đăng ký user vào danh sách sảnh cờ toàn cục
+    const lobbyUserRef = ref(db, `caro_lobby/${username}`);
+    set(lobbyUserRef, { username, fullName, status: 'dang_doi', roomId: 'phong_chung' });
 
     return () => {
       update(userOnlineRef, { currentScreen: 'idle' });
+      remove(lobbyUserRef);
     };
   }, [username]);
 
-  // 2. Lắng nghe trạng thái phòng cờ Realtime (Bao gồm cả bàn cờ và tin nhắn chat)
+  // 2. Lắng nghe danh sách tất cả người chơi trong sảnh cờ Caro để mọi người cùng thấy
   useEffect(() => {
+    const lobbyRef = ref(db, 'caro_lobby');
+    const unsub = onValue(lobbyRef, (snapshot) => {
+      setAllLobbyPlayers(snapshot.val() || {});
+    });
+    return () => unsub();
+  }, []);
+
+  // 3. Lắng nghe trạng thái phòng cờ hiện tại
+  useEffect(() => {
+    if (!roomId) return;
     const roomRef = ref(db, `caro_rooms/${roomId}`);
     const unsub = onValue(roomRef, (snapshot) => {
       const data = snapshot.val() || {};
       setRoomData(data);
-      
-      // Chuyển đổi object chat messages thành array
       if (data.chat) {
         const msgs = Object.entries(data.chat).map(([id, m]) => ({ id, ...m }));
         setChatMessages(msgs);
@@ -46,30 +63,70 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     return () => unsub();
   }, [roomId]);
 
-  // Tự động cuộn xuống tin nhắn mới nhất
+  // Tự động cuộn chat
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [chatMessages]);
 
-  // Khởi tạo phòng
-  const handleJoinRoom = async (rId) => {
-    setRoomId(rId);
-    const roomRef = ref(db, `caro_rooms/${rId}`);
-    onValue(roomRef, (snapshot) => {
-      if (!snapshot.exists()) {
-        set(roomRef, {
-          players: { [username]: { fullName, ready: false, symbol: 'X' } },
-          board: Array(BOARD_SIZE * BOARD_SIZE).fill(''),
-          turn: username,
-          status: 'waiting'
-        });
-      }
-    }, { onlyOnce: true });
+  // 4. Thuật toán GHÉP NGẪU NHIÊN
+  const handleRandomMatch = async () => {
+    setMyStatus('dang_tim_ghep');
+    update(ref(db, `caro_lobby/${username}`), { status: 'dang_tim_ghep' });
+    setNotice('🔍 Đang tìm kỳ thủ cùng chí hướng...');
+
+    const lobbySnapshot = await get(ref(db, 'caro_lobby'));
+    if (!lobbySnapshot.exists()) return;
+
+    const lobbyData = lobbySnapshot.val();
+    // Tìm người khác đang 'dang_tim_ghep' và không phải là mình
+    const matchedUserKey = Object.keys(lobbyData).find(
+      (u) => u !== username && lobbyData[u].status === 'dang_tim_ghep'
+    );
+
+    if (matchedUserKey) {
+      // Tìm thấy đối thủ! Tạo phòng mới ngẫu nhiên
+      const newRoomId = `phong_${Date.now()}`;
+      const opponent = lobbyData[matchedUserKey];
+
+      // Cập nhật trạng thái cả 2 vào phòng mới
+      await set(ref(db, `caro_rooms/${newRoomId}`), {
+        players: {
+          [username]: { fullName, ready: true, symbol: 'X' },
+          [opponent.username]: { fullName: opponent.fullName, ready: true, symbol: 'O' }
+        },
+        board: Array(BOARD_SIZE * BOARD_SIZE).fill(''),
+        turn: username,
+        status: 'playing' // Bắt đầu đánh luôn vì cả 2 đã sẵn sàng ghép
+      });
+
+      // Gửi tín hiệu chuyển phòng cho đối thủ thông qua node riêng
+      await set(ref(db, `caro_invites/${opponent.username}`), {
+        fromUsername: username,
+        fromFullName: fullName,
+        roomId: newRoomId,
+        timestamp: Date.now()
+      });
+
+      setMyStatus('dang_dau');
+      setRoomId(newRoomId);
+      update(ref(db, `caro_lobby/${username}`), { status: 'dang_dau', roomId: newRoomId });
+      setNotice(`🎉 Đã ghép cặp thành công với ${opponent.fullName}! Trận đấu bắt đầu.`);
+    } else {
+      // Nếu chưa có ai, lắng nghe xem có ai vào ghép cùng không
+      setNotice('Đang chờ kỳ thủ khác tham gia ghép đôi...');
+    }
   };
 
-  // Nút Sẵn sàng
+  // Hủy tìm ghép ngẫu nhiên
+  const handleCancelMatch = async () => {
+    setMyStatus('dang_doi');
+    update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi' });
+    setNotice('Đã hủy tìm trận.');
+  };
+
+  // Nút Sẵn Sàng trong phòng riêng (Đợi người kia bắt đầu là đánh luôn)
   const handleToggleReady = async () => {
     if (!roomData) return;
     const isReady = roomData.players?.[username]?.ready || false;
@@ -81,6 +138,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     };
 
     const playerKeys = Object.keys(updatedPlayers);
+    // Nếu đủ 2 người và cả 2 đều bấm Sẵn sàng -> chuyển sang 'playing' đánh luôn
     const allReady = playerKeys.length === 2 && playerKeys.every(k => updatedPlayers[k].ready);
 
     await update(ref(db, `caro_rooms/${roomId}`), {
@@ -88,6 +146,9 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       status: allReady ? 'playing' : 'waiting',
       turn: playerKeys[0] || username
     });
+
+    setMyStatus(allReady ? 'dang_dau' : 'dang_doi');
+    update(ref(db, `caro_lobby/${username}`), { status: allReady ? 'dang_dau' : 'dang_doi' });
   };
 
   // Mời người chơi Online (Chặn nếu đang ở Tịnh Tâm Điện)
@@ -108,7 +169,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setShowInviteModal(false);
   };
 
-  // Gửi tin nhắn chat riêng trong phòng cờ
+  // Gửi tin nhắn chat riêng trong phòng
   const handleSendChat = (e) => {
     e.preventDefault();
     const text = chatInput.trim();
@@ -124,7 +185,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setChatInput('');
   };
 
-  // Logic Đánh cờ
+  // Logic đánh cờ
   const handleCellClick = async (index) => {
     if (!roomData || roomData.status !== 'playing') return;
     if (roomData.turn !== username) return;
@@ -143,6 +204,11 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       status: isWin ? 'finished' : 'playing',
       winner: isWin ? fullName : null
     });
+
+    if (isWin) {
+      setMyStatus('dang_doi');
+      update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi' });
+    }
   };
 
   const checkWin = (board, idx, symbol) => {
@@ -172,34 +238,62 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const players = roomData?.players || {};
   const isMyReady = players[username]?.ready || false;
 
+  // Trạng thái tiếng Việt hiển thị cho các kỳ thủ
+  const renderStatusLabel = (st) => {
+    if (st === 'dang_tim_ghep') return <span style={{ color: '#38bdf8' }}>🔍 Đang tìm ghép đôi</span>;
+    if (st === 'dang_dau') return <span style={{ color: '#ef4444' }}>⚔️ Đang đấu cờ</span>;
+    return <span style={{ color: '#10b981' }}>🟢 Đang đợi / Rảnh</span>;
+  };
+
   return (
     <div className="caro-container">
       <div className="caro-header">
         <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
-        <button onClick={() => setShowInviteModal(true)} className="invite-btn">
-          ✉️ Mời Đạo Hữu Online
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {myStatus === 'dang_tim_ghep' ? (
+            <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
+          ) : (
+            <button onClick={handleRandomMatch} className="random-match-btn">🎲 Ghép Ngẫu Nhiên</button>
+          )}
+          <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời Đạo Hữu</button>
+        </div>
       </div>
 
-      {/* Trạng thái phòng & Sẵn sàng */}
-      <div className="caro-status-bar">
-        <div className="players-info">
-          {Object.entries(players).map(([uname, p]) => (
-            <span key={uname} className={`player-badge ${p.ready ? 'ready' : ''}`}>
-              {p.symbol === 'X' ? '❌' : '⭕'} {p.fullName} {p.ready ? '(Đã sẵn sàng)' : '(Đang chờ)'}
-            </span>
+      {/* BẢNG QUẢN LÝ TRẠNG THÁI TẤT CẢ NGƯỜI CHƠI TRONG SẢNH CỜ */}
+      <div className="lobby-status-panel">
+        <h4 style={{ margin: '0 0 8px 0', color: '#f7dfad', fontSize: '12px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
+        <div className="lobby-players-grid">
+          {Object.entries(allLobbyPlayers).map(([u, p]) => (
+            <div key={u} className="lobby-player-pill">
+              <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
+            </div>
           ))}
         </div>
+      </div>
 
-        {roomData?.status === 'waiting' && (
+      {/* Trạng thái phòng chơi & Nút Sẵn sàng */}
+      <div className="caro-status-bar">
+        <div className="players-info">
+          {Object.entries(players).length === 0 ? (
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Phòng trống, hãy mời bạn chơi hoặc ghép ngẫu nhiên!</span>
+          ) : (
+            Object.entries(players).map(([uname, p]) => (
+              <span key={uname} className={`player-badge ${p.ready ? 'ready' : ''}`}>
+                {p.symbol === 'X' ? '❌' : '⭕'} {p.fullName} {p.ready ? '(Đã sẵn sàng)' : '(Đang chờ)'}
+              </span>
+            ))
+          )}
+        </div>
+
+        {roomData?.status === 'waiting' && Object.keys(players).length > 0 && (
           <button onClick={handleToggleReady} className={`ready-btn ${isMyReady ? 'is-ready' : ''}`}>
-            {isMyReady ? 'CANCEL SẴN SÀNG' : '⚡ SẴN SÀNG'}
+            {isMyReady ? '⚡ HỦY SẴN SÀNG' : '⚡ SẴN SÀNG ĐÁNH'}
           </button>
         )}
 
         {roomData?.status === 'playing' && (
           <div className="turn-notice">
-            Lượt đi: <b>{roomData.turn === username ? 'BẠN' : roomData.players[roomData.turn]?.fullName}</b>
+            Lượt đi: <b>{roomData.turn === username ? 'BẠN' : roomData.players?.[roomData.turn]?.fullName}</b>
           </div>
         )}
 
@@ -210,27 +304,31 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         )}
       </div>
 
-      {/* GIAO DIỆN CHÍNH: BÀN CỜ VÀ KHUNG CHAT RIÊNG */}
+      {/* GIAO DIỆN BÀN CỜ & KHUNG CHAT RIÊNG */}
       <div className="caro-main-layout">
-        {/* Bàn cờ 15x15 */}
         <div className="caro-board">
-          {roomData?.board?.map((cell, idx) => (
-            <button 
-              key={idx} 
-              className={`caro-cell ${cell}`}
-              onClick={() => handleCellClick(idx)}
-            >
-              {cell}
-            </button>
-          ))}
+          {roomData?.board ? (
+            roomData.board.map((cell, idx) => (
+              <button 
+                key={idx} 
+                className={`caro-cell ${cell}`}
+                onClick={() => handleCellClick(idx)}
+              >
+                {cell}
+              </button>
+            ))
+          ) : (
+            Array(BOARD_SIZE * BOARD_SIZE).fill('').map((_, idx) => (
+              <div key={idx} className="caro-cell"></div>
+            ))
+          )}
         </div>
 
-        {/* Khung chat riêng trong phòng cờ */}
         <div className="caro-chat-box">
           <div className="caro-chat-title">💬 Trò chuyện phòng cờ</div>
           <div className="caro-chat-messages" ref={chatScrollRef}>
             {chatMessages.length === 0 ? (
-              <div className="chat-empty">Chưa có tin nhắn nào trong phòng.</div>
+              <div className="chat-empty">Chưa có tin nhắn trong phòng.</div>
             ) : (
               chatMessages.map((msg) => {
                 const isMine = msg.username === username;
@@ -251,7 +349,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
               type="text" 
               value={chatInput} 
               onChange={(e) => setChatInput(e.target.value)} 
-              placeholder="Nhập tin nhắn bàn cờ..." 
+              placeholder="Nhập tin nhắn..." 
               maxLength={300}
             />
             <button type="submit">Gửi</button>
@@ -259,11 +357,11 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         </div>
       </div>
 
-      {/* MODAL MỜI NGƯỜI CHƠI */}
+      {/* MODAL MỜI ĐẠO HỮU */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>✉️ Danh sách Đạo Hữu Online</h3>
+            <h3>✉️ Danh sách Kỳ Thủ Online</h3>
             <div className="online-list">
               {Object.entries(activeUsers)
                 .filter(([u]) => u !== username)
@@ -290,9 +388,16 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
       <style>{`
         .caro-container { max-width: 1000px; margin: 0 auto; padding: 20px; background: #171d2b; border-radius: 16px; color: #fff; text-align: center; }
-        .caro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .invite-btn { padding: 8px 16px; background: #b45309; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .caro-status-bar { background: #202737; padding: 12px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .caro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .invite-btn { padding: 8px 14px; background: #b45309; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .random-match-btn { padding: 8px 14px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .cancel-match-btn { padding: 8px 14px; background: #dc2626; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        
+        .lobby-status-panel { background: #1e293b; padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #334155; text-align: left; }
+        .lobby-players-grid { display: flex; flex-wrap: wrap; gap: 8px; max-height: 80px; overflow-y: auto; }
+        .lobby-player-pill { background: #0f172a; padding: 4px 10px; border-radius: 6px; font-size: 11px; border: 1px solid #384255; }
+
+        .caro-status-bar { background: #202737; padding: 10px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; }
         .player-badge { padding: 4px 10px; background: #334155; border-radius: 20px; font-size: 12px; }
         .player-badge.ready { background: #065f46; color: #a7f3d0; }
         .ready-btn { padding: 8px 18px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -305,7 +410,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         .caro-cell.X { color: #ef4444; }
         .caro-cell.O { color: #3b82f6; }
 
-        /* Khung chat riêng phòng cờ */
         .caro-chat-box { width: 300px; height: 520px; background: #202737; border: 1px solid #34394a; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; text-align: left; }
         .caro-chat-title { padding: 10px 14px; background: #171f2d; font-size: 13px; font-weight: bold; color: #ffb703; border-bottom: 1px solid #334155; }
         .caro-chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
