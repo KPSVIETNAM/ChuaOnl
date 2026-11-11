@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, set, update, push, onValue, remove, runTransaction } from 'firebase/database';
+import CaroBoard from './caro/CaroBoard';
+import CaroChat from './caro/CaroChat';
+import CaroInviteModal from './caro/CaroInviteModal'; // <-- Import component popup mời
 
 const BOARD_SIZE = 15;
 const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
@@ -148,12 +151,10 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null }); 
   };
 
-  // Nút Thoát Trận
   const handleLeaveRoom = async () => {
     if (roomId && roomId !== 'phong_chung') {
       const roomRef = ref(db, `caro_rooms/${roomId}`);
       if (roomData && roomData.status === 'playing') {
-        // Nếu đang chơi mà thoát -> xử lý hủy trận hoặc xử lý đối thủ thắng tùy logic
         await update(roomRef, {
           status: 'cancelled',
           winner: 'Hủy trận',
@@ -165,7 +166,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
     setRoomId('phong_chung');
     setRoomData(null);
-    if (onBack) onBack();
   };
 
   const handleToggleReady = async () => {
@@ -212,8 +212,8 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_rooms/${roomId}`), updates);
   };
 
-   const handleInviteUser = async (targetUsername, targetUserObj) => {
-    const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' ;
+  const handleInviteUser = async (targetUsername, targetUserObj) => {
+    const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien';
     if (isMeditating) {
       if (setNotice) setNotice(`Đạo hữu ${targetUserObj.fullName || targetUsername} đang tịnh tâm, không thể quấy rầy! 🧘`);
       setShowInviteModal(false);
@@ -222,7 +222,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
     const newRoomId = `phong_${Date.now()}`;
 
-    // Tạo phòng chờ trên Firebase
     await set(ref(db, `caro_rooms/${newRoomId}`), {
       players: {
         [username]: { fullName, ready: true, symbol: 'X', ruleRequest: false }
@@ -233,7 +232,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       winningLine: []
     });
 
-    // Gửi lời mời kèm roomId sang cho người nhận
     await set(ref(db, `caro_invites/${targetUsername}`), {
       fromUsername: username,
       fromFullName: fullName,
@@ -242,8 +240,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     });
 
     setShowInviteModal(false);
-    
-    // THAY ĐỔI: Người mời sẽ tự động nhảy vào phòng và hiển thị trạng thái đang đợi đối phương vào
     setRoomId(newRoomId);
     setMyStatus('dang_dau');
     
@@ -478,7 +474,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
           </div>
         )}
 
-        {/* Khung Kết Quả Đã Được Thu Gọn Gàng */}
         {roomData?.status === 'finished' && (
           <div className="win-notice-box-compact">
             <div className="win-text">
@@ -503,100 +498,31 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       </div>
 
       <div className="caro-main-layout">
-        <div className="caro-board">
-          {roomData?.board ? (
-            roomData.board.map((cell, idx) => {
-              const isWinningCell = winningLine.includes(idx);
-              return (
-                <button 
-                  key={idx} 
-                  className={`caro-cell ${cell} ${isWinningCell ? 'winning-cell' : ''}`}
-                  onClick={() => handleCellClick(idx)}
-                  disabled={roomData.status !== 'playing'}
-                >
-                  {cell}
-                </button>
-              );
-            })
-          ) : (
-            Array(TOTAL_CELLS).fill('').map((_, idx) => (
-              <div key={idx} className="caro-cell"></div>
-            ))
-          )}
-        </div>
+        <CaroBoard 
+          board={roomData?.board} 
+          winningLine={winningLine} 
+          status={roomData?.status} 
+          onCellClick={handleCellClick} 
+        />
 
-        <div className="caro-chat-box">
-          <div className="caro-chat-title">💬 Trò chuyện phòng cờ</div>
-          <div className="caro-chat-messages" ref={chatScrollRef}>
-            {chatMessages.length === 0 ? (
-              <div className="chat-empty">Chưa có tin nhắn trong phòng.</div>
-            ) : (
-              chatMessages.map((msg) => {
-                const isMine = msg.username === username;
-                return (
-                  <div key={msg.id} className={`caro-msg ${isMine ? 'my-msg' : ''}`}>
-                    <div className="caro-msg-meta">
-                      <strong>{msg.sender}</strong>
-                      <time>{msg.time}</time>
-                    </div>
-                    <div className="caro-msg-bubble">{msg.text}</div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <form className="caro-chat-form" onSubmit={handleSendChat}>
-            <input 
-              type="text" 
-              value={chatInput} 
-              onChange={(e) => setChatInput(e.target.value)} 
-              placeholder="Nhập tin nhắn..." 
-              maxLength={300}
-            />
-            <button type="submit">Gửi</button>
-          </form>
-        </div>
+        <CaroChat 
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          handleSendChat={handleSendChat}
+          chatScrollRef={chatScrollRef}
+          username={username}
+        />
       </div>
 
+      {/* Hiển thị Popup Mời từ component tách riêng */}
       {showInviteModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>✉️ Danh sách Đạo Hữu Online</h3>
-            <div className="online-list">
-              {activeUsers && Object.keys(activeUsers).filter(u => u !== username).length > 0 ? (
-                Object.entries(activeUsers)
-                  .filter(([u]) => u !== username)
-                  .map(([u, userObj]) => {
-                    const isMeditating = userObj?.currentScreen === 'TinhTamDien' ;
-                    const displayName = userObj?.fullName || u;
-                    const currentLoc = userObj?.currentScreen ? `(Đang ở: ${userObj.currentScreen})` : '(Online)';
-                    return (
-                      <div key={u} className="online-item">
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 'bold', color: '#fff' }}>{displayName}</div>
-                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                            {currentLoc}
-                          </div>
-                        </div>
-                        <button 
-                          disabled={isMeditating}
-                          onClick={() => handleInviteUser(u, userObj)}
-                          className={`send-invite-btn ${isMeditating ? 'disabled' : ''}`}
-                        >
-                          {isMeditating ? 'Bận' : 'Thách đấu'}
-                        </button>
-                      </div>
-                    );
-                  })
-              ) : (
-                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>
-                  Không có đạo hữu nào khác đang online.
-                </div>
-              )}
-            </div>
-            <button onClick={() => setShowInviteModal(false)} className="close-btn">Đóng</button>
-          </div>
-        </div>
+        <CaroInviteModal 
+          activeUsers={activeUsers}
+          username={username}
+          onInviteUser={handleInviteUser}
+          onClose={() => setShowInviteModal(false)}
+        />
       )}
 
       <style>{`
@@ -623,7 +549,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         .rule-btn { padding: 3px 8px; background: #475569; color: #fff; border: none; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; margin-top: 1px; }
         .rule-btn.active { background: #059669; }
 
-        /* Khung kết quả thu gọn */
         .win-notice-box-compact { display: flex; align-items: center; gap: 10px; background: #1e293b; padding: 4px 10px; border-radius: 6px; border: 1px solid #f59e0b; }
         .win-text { font-size: 11px; color: #fbbf24; }
         .rematch-btn-compact { padding: 4px 10px; background: #d97706; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; }
