@@ -39,7 +39,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
   useEffect(() => {
     const bgAudio = new Audio('/audio/amnen.mp3');
     bgAudio.loop = true;
-    bgAudio.volume = 0.2;
+    bgAudio.volume = 0.8;
     bgAudio.play().catch(() => {});
     return () => bgAudio.pause();
   }, []);

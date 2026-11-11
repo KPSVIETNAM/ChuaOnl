@@ -86,7 +86,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
   useEffect(() => {
     bgAudioRef.current = new Audio('/audio/amnen.mp3');
     bgAudioRef.current.loop = true;
-    bgAudioRef.current.volume = 0.4;
+    bgAudioRef.current.volume = 0.7;
 
     if (isBgAudioPlaying) {
       bgAudioRef.current.play().catch(() => {});
