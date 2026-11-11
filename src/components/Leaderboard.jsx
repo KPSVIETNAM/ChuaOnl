@@ -16,14 +16,18 @@ export default function Leaderboard({ allUsers, logs }) {
           ))}
         </div>
       </div>
-
-      <div style={{ ...styles.section, marginTop: '15px' }}> 
-          {logs.map((log, index) => (
-            <div key={index} style={styles.logItem}>
-              <span style={{ color: '#64748b', fontSize: '10px' }}>[{log.time}]</span> {log.text}
-            </div>
-          ))}
-        </div> 
+      <div style={{ 
+        ...styles.section, 
+        marginTop: '15px',
+        maxHeight: '200px',    /* Giới hạn chiều cao tối đa (tùy chỉnh 150px - 300px tùy giao diện) */
+        overflowY: 'auto'      /* Hiện thanh cuộn khi log vượt quá maxHeight */
+      }}> 
+        {logs.slice(-200).map((log, index) => (
+          <div key={index} style={styles.logItem}>
+            <span style={{ color: '#64748b', fontSize: '10px' }}>[{log.time}]</span> {log.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
