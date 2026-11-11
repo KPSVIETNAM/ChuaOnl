@@ -212,16 +212,17 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_rooms/${roomId}`), updates);
   };
 
-  const handleInviteUser = async (targetUsername, targetUserObj) => {
+   const handleInviteUser = async (targetUsername, targetUserObj) => {
     const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' || targetUserObj?.status?.includes('tịnh tâm');
     if (isMeditating) {
       if (setNotice) setNotice(`Đạo hữu ${targetUserObj.fullName || targetUsername} đang tịnh tâm, không thể quấy rầy! 🧘`);
+      setShowInviteModal(false);
       return;
     }
 
     const newRoomId = `phong_${Date.now()}`;
-    setRoomId(newRoomId);
 
+    // Tạo phòng chờ trên Firebase
     await set(ref(db, `caro_rooms/${newRoomId}`), {
       players: {
         [username]: { fullName, ready: true, symbol: 'X', ruleRequest: false }
@@ -232,6 +233,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       winningLine: []
     });
 
+    // Gửi lời mời kèm roomId sang cho người nhận
     await set(ref(db, `caro_invites/${targetUsername}`), {
       fromUsername: username,
       fromFullName: fullName,
@@ -240,6 +242,12 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     });
 
     setShowInviteModal(false);
+    
+    // THAY ĐỔI: Người mời sẽ tự động nhảy vào phòng và hiển thị trạng thái đang đợi đối phương vào
+    setRoomId(newRoomId);
+    setMyStatus('dang_dau');
+    
+    if (setNotice) setNotice(`Đã gửi lời mời tới ${targetUserObj.fullName || targetUsername}. Đang đợi chấp nhận...`);
   };
 
   const handleSendChat = (e) => {

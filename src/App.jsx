@@ -64,36 +64,61 @@ export default function App() {
   // Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI TỰ ĐỘNG THÊM VÀO PHÒNG CHO NGƯỜI NHẬN MỜI)
   const handleAcceptInvite = async () => {
     if (!caroInvite) return;
-    const roomToJoin = caroInvite.roomId || 'phong_chung';
-    
+    const roomToJoin = caroInvite.roomId;
+    const inviterUsername = caroInvite.fromUsername;
+
     try {
-      // Kiểm tra phòng tồn tại và tự động join vào phòng với quân 'O'
+      // 1. Kiểm tra trạng thái online hiện tại của người mời từ Firebase
+      const inviterOnlineSnap = await get(ref(db, `online_users/${inviterUsername}`));
+      const inviterData = inviterOnlineSnap.exists() ? inviterOnlineSnap.val() : null;
+
+      // Kiểm tra xem người mời còn ở trang Caro hay không
+      const inviterScreen = inviterData?.currentScreen || '';
+      const isInviterInCaro = inviterScreen === 'caro' || inviterScreen.startsWith('CoCaro');
+
+      // 2. Lấy dữ liệu phòng cờ để kiểm tra trạng thái ván đấu
       const roomRef = ref(db, `caro_rooms/${roomToJoin}`);
       const roomSnap = await get(roomRef);
-      if (roomSnap.exists()) {
-        const roomData = roomSnap.val();
-        const players = roomData.players || {};
-        
-        // Nếu mình chưa có trong phòng thì add vào
-        if (!players[currentUser.username]) {
-          await update(ref(db, `caro_rooms/${roomToJoin}/players`), {
-            [currentUser.username]: {
-              fullName: currentUser.fullName || currentUser.username,
-              ready: true,
-              symbol: 'O'
-            }
-          });
-          // Đồng thời set trạng thái phòng thành playing nếu đủ 2 người
-          await update(roomRef, { status: 'playing' });
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi khi tham gia phòng cờ:", err);
-    }
+      const roomData = roomSnap.exists() ? roomSnap.val() : null;
 
-    await remove(ref(db, `caro_invites/${currentUser.username}`));
-    setCaroInvite(null);
-    setCurrentScreen(`CoCaro_${roomToJoin}`);
+      // Điều kiện hủy lời mời: Người mời rời trang Caro HOẶC phòng đã chuyển sang 'playing' / 'cancelled' / không tồn tại
+      if (!isInviterInCaro || !roomData || roomData.status !== 'waiting') {
+        alert("⚠️ Lời mời đã hết hạn hoặc người mời không còn ở phòng chờ!");
+        await remove(ref(db, `caro_invites/${currentUser.username}`));
+        setCaroInvite(null);
+        return;
+      }
+
+      // 3. Nếu đủ điều kiện, add người nhận vào phòng với quân 'O' và bắt đầu ván đấu
+      const players = roomData.players || {};
+      const updatedPlayers = {
+        ...players,
+        [currentUser.username]: {
+          fullName: currentUser.fullName || currentUser.username,
+          ready: true,
+          symbol: 'O',
+          ruleRequest: false
+        }
+      };
+
+      const playerKeys = Object.keys(updatedPlayers);
+      await update(roomRef, {
+        players: updatedPlayers,
+        status: 'playing',
+        turn: playerKeys[0] // Người mời (X) đi trước
+      });
+
+      // Xóa lời mời sau khi chấp nhận thành công
+      await remove(ref(db, `caro_invites/${currentUser.username}`));
+      setCaroInvite(null);
+
+      // Chuyển người nhận sang màn hình Caro phòng này
+      setCurrentScreen(`CoCaro_${roomToJoin}`);
+
+    } catch (err) {
+      console.error("Lỗi khi chấp nhận lời mời:", err);
+      alert("Cơ sở dữ liệu bận, vui lòng thử lại!");
+    }
   };
 
   // Hàm từ chối lời mời Caro
@@ -211,8 +236,10 @@ export default function App() {
   );
 
   // Popup hiển thị lời mời Caro
-  const renderCaroInvitePopup = () => (
-    caroInvite && (
+  const renderCaroInvitePopup = () => {
+    if (!caroInvite || currentScreen === 'TinhTamDien') return null;
+
+    return (
       <div style={{
         position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
         backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
@@ -227,8 +254,8 @@ export default function App() {
           <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
         </div>
       </div>
-    )
-  );
+    );
+  };
 
   // 1. Màn hình Chánh Điện
   if (currentScreen === 'chanhdien') {
@@ -276,7 +303,7 @@ export default function App() {
           setNotice={(msg) => alert(msg)}
           onBack={() => setCurrentScreen('tamquan')}
         />
-        {/* {renderCaroInvitePopup()} */}
+        {renderCaroInvitePopup()}
       </div>
     );
   }
