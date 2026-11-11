@@ -6,7 +6,7 @@ import ChanhDien from './components/ChanhDien';
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
-import { ref, onValue, remove, update } from './firebase/database';
+import { ref, onValue, remove, update } from 'firebase/database';
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('auth'); // 'auth', 'tamquan', 'chanhdien', 'TinhTamDien', 'TangKinhCac'
