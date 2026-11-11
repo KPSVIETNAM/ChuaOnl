@@ -32,7 +32,7 @@ export default function Leaderboard({ allUsers, logs }) {
 }
 
 import { ref, get, remove } from 'firebase/database';
-import { db } from './firebase';
+import { db } from '../firebase';
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
