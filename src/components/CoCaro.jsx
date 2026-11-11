@@ -12,7 +12,13 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  const [roomId, setRoomId] = useState(initialRoomId || 'phong_chung');
+  // MỚI: Đảm bảo bóc tách chính xác roomId từ prop truyền vào hoặc initialRoomId
+const [roomId, setRoomId] = useState(() => {
+  if (initialRoomId && initialRoomId !== 'CoCaro') {
+    return initialRoomId;
+  }
+  return 'phong_chung';
+});
   const [roomData, setRoomData] = useState(null);
   const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); 
   const [showInviteModal, setShowInviteModal] = useState(false);
