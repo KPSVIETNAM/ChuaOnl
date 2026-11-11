@@ -61,23 +61,26 @@ export default function TamQuan({ currentUser, onNavigate }) {
           <span style={styles.gateIcon}>📖</span>
           <h3 style={styles.gateTitle}>Tàng Kinh Các</h3>
           <p style={styles.gateDesc}>Kho tàng kinh điển, tài liệu và tri thức Phật pháp.</p>
+        </div> 
+
+      </div>
+    {/* 4. Nút Kỳ Viện Caro (Đặt riêng dạng Badge/Đao đài nhỏ ở góc phải màn hình) */}
+      <div 
+        style={{
+          ...styles.caroWidget,
+          transform: hoveredGate === 'CoCaro' ? 'scale(1.05)' : 'scale(1)',
+          borderColor: hoveredGate === 'CoCaro' ? '#ffb703' : 'rgba(255, 183, 3, 0.4)',
+          backgroundColor: hoveredGate === 'CoCaro' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.75)',
+        }}
+        onMouseEnter={() => setHoveredGate('CoCaro')}
+        onMouseLeave={() => setHoveredGate(null)}
+        onClick={() => onNavigate('CoCaro')}
+      >
+        <span style={{ fontSize: '24px' }}>⚔️</span>
+        <div style={{ textAlign: 'left' }}>
+          <div style={styles.caroTitle}>Kỳ Viện Caro</div>
+          <div style={styles.caroSubText}>Đọ sức trí tuệ</div>
         </div>
-          <div 
-
-      style={{
-        ...styles.gateItem,
-        transform: hoveredGate === 'CoCaro' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
-        opacity: hoveredGate === 'CoCaro' ? 1 : 0.35,
-      }}
-      onMouseEnter={() => setHoveredGate('CoCaro')}
-      onMouseLeave={() => setHoveredGate(null)}
-      onClick={() => onNavigate('CoCaro')}
-    >
-      <span style={styles.gateIcon}>⚔️</span>
-      <h3 style={styles.gateTitle}>Kỳ Viện Caro</h3>
-      <p style={styles.gateDesc}>Giao lưu trí tuệ cùng đạo hữu.</p>
-    </div>
-
       </div>
     </div>
   );
@@ -162,5 +165,33 @@ const styles = {
     color: '#f8fafc',
     lineHeight: '1.4',
     textShadow: '0 2px 4px rgba(0,0,0,0.9)'
+  }
+  // Style riêng cho ô Caro nhỏ gọn ở góc dưới/giữa phía bên phải
+  ,caroWidget: {
+    position: 'absolute',
+    bottom: '40px',
+    right: '40px',
+    zIndex: 10,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 183, 3, 0.4)',
+    backdropFilter: 'blur(8px)',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.6)'
+  },
+  caroTitle: {
+    color: '#ffb703',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    margin: 0
+  },
+  caroSubText: {
+    color: '#cbd5e1',
+    fontSize: '11px',
+    margin: 0
   }
 };
