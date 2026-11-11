@@ -156,61 +156,61 @@ export default function App() {
       </div>
     );
   }
+  
 
+// Bổ sung State & Effect trong App.js
+const [caroInvite, setCaroInvite] = useState(null); // Lưu lời mời Caro gửi tới
+
+// Lắng nghe lời mời Caro riêng cho tài khoản
+useEffect(() => {
+  if (!currentUser?.username) return;
+
+  const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
+  const unsubscribe = onValue(inviteRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      setCaroInvite(data);
+    } else {
+      setCaroInvite(null);
+    }
+  });
+
+  return () => unsubscribe();
+}, [currentUser]);
+
+// Hàm chấp nhận lời mời Caro
+const handleAcceptInvite = async () => {
+  if (!caroInvite) return;
+  const roomToJoin = caroInvite.roomId;
+  await remove(ref(db, `caro_invites/${currentUser.username}`));
+  setCaroInvite(null);
+  setCurrentScreen(`caro_${roomToJoin}`);
+};
+
+// Hàm từ chối lời mời Caro
+const handleDeclineInvite = async () => {
+  if (!caroInvite) return;
+  await remove(ref(db, `caro_invites/${currentUser.username}`));
+  setCaroInvite(null);
+};
+
+{/* Popup Nhận lời mời Caro realtime */}
+{caroInvite && (
+  <div style={{
+    position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
+    backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
+    borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+  }}>
+    <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>⚔️ Thách đấu Cờ Caro!</h4>
+    <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
+      <b>{caroInvite.fromFullName}</b> mời đạo hữu vào chơi cờ!
+    </p>
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <button onClick={handleAcceptInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
+      <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
+    </div>
+  </div>
+)}
   return null;
 }
-
-
-// // Bổ sung State & Effect trong App.js
-// const [caroInvite, setCaroInvite] = useState(null); // Lưu lời mời Caro gửi tới
-
-// // Lắng nghe lời mời Caro riêng cho tài khoản
-// useEffect(() => {
-//   if (!currentUser?.username) return;
-
-//   const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
-//   const unsubscribe = onValue(inviteRef, (snapshot) => {
-//     const data = snapshot.val();
-//     if (data) {
-//       setCaroInvite(data);
-//     } else {
-//       setCaroInvite(null);
-//     }
-//   });
-
-//   return () => unsubscribe();
-// }, [currentUser]);
-
-// // Hàm chấp nhận lời mời Caro
-// const handleAcceptInvite = async () => {
-//   if (!caroInvite) return;
-//   const roomToJoin = caroInvite.roomId;
-//   await remove(ref(db, `caro_invites/${currentUser.username}`));
-//   setCaroInvite(null);
-//   setCurrentScreen(`caro_${roomToJoin}`);
-// };
-
-// // Hàm từ chối lời mời Caro
-// const handleDeclineInvite = async () => {
-//   if (!caroInvite) return;
-//   await remove(ref(db, `caro_invites/${currentUser.username}`));
-//   setCaroInvite(null);
-// };
-
-// {/* Popup Nhận lời mời Caro realtime */}
-// {caroInvite && (
-//   <div style={{
-//     position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
-//     backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
-//     borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
-//   }}>
-//     <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>⚔️ Thách đấu Cờ Caro!</h4>
-//     <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
-//       <b>{caroInvite.fromFullName}</b> mời đạo hữu vào chơi cờ!
-//     </p>
-//     <div style={{ display: 'flex', gap: '8px' }}>
-//       <button onClick={handleAcceptInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
-//       <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
-//     </div>
-//   </div>
-// )}
+ 
