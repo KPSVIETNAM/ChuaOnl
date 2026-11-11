@@ -65,20 +65,17 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
 
   // Hàm chuyển đổi tổng số phút thành định dạng: X ngày Y giờ Z phút W giây
   const formatMinutesToDHMS = (totalMins) => {
-    if (!totalMins || totalMins <= 0) return '0 phút 0 giây';
+    if (!totalMins || totalMins <= 0) return '0 phút';
     
     const totalSeconds = Math.floor(totalMins * 60);
     const days = Math.floor(totalSeconds / (3600 * 24));
     const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
     let parts = [];
     if (days > 0) parts.push(`${days} ngày`);
     if (hours > 0 || days > 0) parts.push(`${hours} giờ`);
     if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes} phút`);
-    parts.push(`${seconds} giây`);
-
     return parts.join(' ');
   };
 
