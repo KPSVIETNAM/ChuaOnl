@@ -16,7 +16,7 @@ export default function TamQuan({ currentUser, onNavigate }) {
         onClick={handleLogout} 
         style={{ padding: '6px 12px', background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
       >
-        🚪thaotsd <b>{currentUser?.fullName}</b> 
+        🚪Thoát TK <b>{currentUser?.fullName}</b> 
       </button>
       {/* Vùng chứa 3 lối đi căn chỉnh đúng vị trí các cổng trên ảnh */}
       <div style={styles.gatesContainer}>
