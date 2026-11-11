@@ -94,7 +94,7 @@ export default function App() {
         ...players,
         [currentUser.username]: {
           fullName: currentUser.fullName || currentUser.username,
-          ready: false,
+          ready: true,
           symbol: 'O',
           ruleRequest: false
         }
