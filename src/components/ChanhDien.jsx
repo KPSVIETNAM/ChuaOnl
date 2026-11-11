@@ -319,7 +319,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
       {/* CỘT PHẢI: Bảng Công Đức, Nhật Ký & Khung Chat */}
       <div className="right-column">
-        <Leaderboard allUsers={allUsers} logs={logs} />
+        <Leaderboard allUsers={allUsers} logs={logs} onlineUsers={activeUsers} />
 
         <section className="community-chat" aria-label="Trò chuyện cộng đồng">
           <header className="chat-heading">

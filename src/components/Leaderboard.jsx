@@ -1,16 +1,16 @@
 import React from 'react';
 
-export default function Leaderboard({ allUsers, logs }) {
+export default function Leaderboard({ allUsers , logs }) {
   const leaderboard = Object.values(allUsers).sort((a, b) => (b.totalCongDuc || 0) - (a.totalCongDuc || 0));
 
   return (
     <div style={styles.container}>
-      <div style={styles.section}>
+      <div style={styles.section}> 
         <h3>🏆 BẢNG CÔNG ĐỨC</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
           {leaderboard.map((u, i) => (
             <div key={u.username} style={styles.row}>
-              <span><b>#{i + 1}</b> {u.fullName}</span>
+              <span><b>#{i + 1}</b> {u.fullName }</span>
               <b style={{ color: '#fb8500' }}>{u.totalCongDuc || 0}</b>
             </div>
           ))}

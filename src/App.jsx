@@ -208,6 +208,7 @@ useEffect(() => {
           allUsers={allUsers} 
           logs={logs} 
         />
+        {renderCaroInvitePopup()} {/* Thêm popup caro   */}
       </div>
     );
   }
@@ -251,7 +252,7 @@ useEffect(() => {
       </div>
     );
   }
- // 4. Màn hình Cờ Caro 
+ // 5. Màn hình Cờ Caro 
   if (currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_')) {
     const roomId = currentScreen.includes('_') ? currentScreen.split('_')[1] : 'phong_chung';
     return (
@@ -268,6 +269,14 @@ useEffect(() => {
       </div>
     );
   }
+  // Lắng nghe lời mời Cờ Caro đến tài khoản của mình
+  useEffect(() => {
+    if (!currentUser?.username) return;
+    const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
+    return onValue(inviteRef, (snapshot) => {
+      setCaroInvite(snapshot.val());
+    });
+  }, [currentUser]);
  
   return null;
 }
