@@ -23,7 +23,13 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
-
+    // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js (khi bấm chấp nhận lời mời)
+  useEffect(() => {
+    if (initialRoomId && initialRoomId !== roomId) {
+      setRoomId(initialRoomId);
+      setMyStatus('dang_dau');
+    }
+  }, [initialRoomId]);
   // 1. Cập nhật trạng thái user online & lấy thống kê ván đấu cá nhân
   useEffect(() => {
     if (!username) return;
@@ -40,13 +46,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       const rate = total > 0 ? Math.round((data.wins / total) * 100) : 0;
       setMyStats({ wins: data.wins || 0, losses: data.losses || 0, winRate: rate });
     });
-    // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js (khi bấm chấp nhận lời mời)
-  useEffect(() => {
-    if (initialRoomId && initialRoomId !== roomId) {
-      setRoomId(initialRoomId);
-      setMyStatus('dang_dau');
-    }
-  }, [initialRoomId]);
+ 
     return () => {
       update(userOnlineRef, { currentScreen: 'idle' });
       remove(lobbyUserRef);
