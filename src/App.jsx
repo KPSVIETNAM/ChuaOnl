@@ -187,7 +187,11 @@ export default function App() {
   }
 
   if (currentScreen === 'tamquan') {
-    return <TamQuan currentUser={currentUser} onNavigate={(screen) => setCurrentScreen(screen)} />;
+    return<TamQuan 
+      currentUser={currentUser} 
+      onNavigate={(screen) => setCurrentScreen(screen)} 
+      handleLogout={handleLogout} 
+    />
   }
 
   // Tính tổng công đức toàn hệ thống
