@@ -213,7 +213,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   };
 
    const handleInviteUser = async (targetUsername, targetUserObj) => {
-    const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' || targetUserObj?.status?.includes('tịnh tâm');
+    const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' ;
     if (isMeditating) {
       if (setNotice) setNotice(`Đạo hữu ${targetUserObj.fullName || targetUsername} đang tịnh tâm, không thể quấy rầy! 🧘`);
       setShowInviteModal(false);
@@ -575,7 +575,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
                         <div style={{ textAlign: 'left' }}>
                           <div style={{ fontWeight: 'bold', color: '#fff' }}>{displayName}</div>
                           <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                            {currentLoc} {isMeditating ? '🧘 (Đang tịnh tâm)' : ''}
+                            {currentLoc}
                           </div>
                         </div>
                         <button 
