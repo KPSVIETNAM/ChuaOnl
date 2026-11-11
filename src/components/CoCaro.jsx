@@ -255,7 +255,7 @@ const [roomId, setRoomId] = useState(() => {
     setRoomId(newRoomId);
     setMyStatus('dang_dau');
     
-    if (setNotice) setNotice(`Đã gửi lời mời tới ${targetUserObj.fullName || targetUsername}. Đang đợi chấp nhận...`);
+    // if (setNotice) setNotice(`Đã gửi lời mời tới ${targetUserObj.fullName || targetUsername}. Đang đợi chấp nhận...`);
   };
 
   const handleSendChat = (e) => {
@@ -416,9 +416,14 @@ const [roomId, setRoomId] = useState(() => {
     <div className="caro-container">
       <div className="caro-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button onClick={handleLeaveRoom} className="leave-room-btn">🚪 Thoát trận</button>
-          <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
-        </div>
+        {/* Chỉ hiển thị nút Thoát trận khi đã tạo/vào phòng thực sự   */}
+        {roomId && roomId !== 'phong_chung' && (
+          <button onClick={handleLeaveRoom} className="leave-room-btn">
+            🚪 Thoát trận
+          </button>
+        )}
+        <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
+      </div>
         
         <div className="my-stats-badge">
           🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
