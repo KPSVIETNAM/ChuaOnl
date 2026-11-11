@@ -59,9 +59,7 @@ export default function App() {
     return onValue(inviteRef, (snapshot) => {
       setCaroInvite(snapshot.val());
     });
-  }, [currentUser]);
-
-  // Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI TỰ ĐỘNG THÊM VÀO PHÒNG CHO NGƯỜI NHẬN MỜI)
+  }, [currentUser]);// Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI ĐỒNG BỘ PHÒNG ĐẤU CHO NGƯỜI NHẬN)
   const handleAcceptInvite = async () => {
     if (!caroInvite) return;
     const roomToJoin = caroInvite.roomId;
@@ -102,10 +100,24 @@ export default function App() {
       };
 
       const playerKeys = Object.keys(updatedPlayers);
+      
+      // Cập nhật thông tin phòng cờ
       await update(roomRef, {
         players: updatedPlayers,
         status: 'playing',
         turn: playerKeys[0] // Người mời (X) đi trước
+      });
+
+      // BỔ SUNG QUAN TRỌNG: Đồng bộ trạng thái sảnh của người nhận lên Firebase
+      await update(ref(db, `caro_lobby/${currentUser.username}`), {
+        status: 'dang_dau',
+        roomId: roomToJoin,
+        matchedRoomId: roomToJoin
+      });
+
+      // BỔ SUNG QUAN TRỌNG: Đồng bộ vị trí online người nhận
+      await update(ref(db, `online_users/${currentUser.username}`), {
+        currentScreen: `CoCaro_${roomToJoin}`
       });
 
       // Xóa lời mời sau khi chấp nhận thành công
@@ -120,7 +132,6 @@ export default function App() {
       alert("Cơ sở dữ liệu bận, vui lòng thử lại!");
     }
   };
-
   // Hàm từ chối lời mời Caro
   const handleDeclineInvite = async () => {
     if (!caroInvite) return;

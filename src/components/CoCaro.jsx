@@ -40,7 +40,13 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       const rate = total > 0 ? Math.round((data.wins / total) * 100) : 0;
       setMyStats({ wins: data.wins || 0, losses: data.losses || 0, winRate: rate });
     });
-
+    // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js (khi bấm chấp nhận lời mời)
+  useEffect(() => {
+    if (initialRoomId && initialRoomId !== roomId) {
+      setRoomId(initialRoomId);
+      setMyStatus('dang_dau');
+    }
+  }, [initialRoomId]);
     return () => {
       update(userOnlineRef, { currentScreen: 'idle' });
       remove(lobbyUserRef);
