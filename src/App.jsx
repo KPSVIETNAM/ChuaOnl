@@ -156,7 +156,7 @@ useEffect(() => {
         onClick={handleLogout} 
         style={{ padding: '6px 12px', background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
       >
-        🚪 Thoát tài khoản
+        🚪 Thoát tK <b >{currentUser?.fullName}</b>
       </button>
     </div>
   );
