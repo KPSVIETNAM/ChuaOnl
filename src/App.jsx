@@ -60,6 +60,7 @@ export default function App() {
       setCaroInvite(snapshot.val());
     });
   }, [currentUser]);// Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI ĐỒNG BỘ PHÒNG ĐẤU CHO NGƯỜI NHẬN)
+ // Hàm chấp nhận lời mời Caro (Đã tinh chỉnh lại để đồng bộ chuẩn xác trạng thái vào trận)
   const handleAcceptInvite = async () => {
     if (!caroInvite) return;
     const roomToJoin = caroInvite.roomId;
@@ -87,35 +88,36 @@ export default function App() {
         return;
       }
 
-      // 3. Nếu đủ điều kiện, add người nhận vào phòng với quân 'O' và bắt đầu ván đấu
+      // 3. Đưa người nhận vào phòng với quân 'O', set sẵn sàng (ready: true) và bật luôn trạng thái playing
       const players = roomData.players || {};
       const updatedPlayers = {
         ...players,
         [currentUser.username]: {
           fullName: currentUser.fullName || currentUser.username,
-          ready: true,
+          ready: false,
           symbol: 'O',
           ruleRequest: false
         }
       };
 
       const playerKeys = Object.keys(updatedPlayers);
-      
-      // Cập nhật thông tin phòng cờ
+      const firstPlayerKey = playerKeys[0] || inviterUsername;
+
+      // Cập nhật phòng chơi thành 'playing' và chỉ định lượt đi rõ ràng
       await update(roomRef, {
         players: updatedPlayers,
         status: 'playing',
-        turn: playerKeys[0] // Người mời (X) đi trước
+        turn: firstPlayerKey 
       });
 
-      // BỔ SUNG QUAN TRỌNG: Đồng bộ trạng thái sảnh của người nhận lên Firebase
+      // Cập nhật trạng thái sảnh của người nhận
       await update(ref(db, `caro_lobby/${currentUser.username}`), {
         status: 'dang_dau',
         roomId: roomToJoin,
         matchedRoomId: roomToJoin
       });
 
-      // BỔ SUNG QUAN TRỌNG: Đồng bộ vị trí online người nhận
+      // Cập nhật vị trí màn hình hiện tại của người nhận thành phòng Caro cụ thể
       await update(ref(db, `online_users/${currentUser.username}`), {
         currentScreen: `CoCaro_${roomToJoin}`
       });
@@ -124,7 +126,7 @@ export default function App() {
       await remove(ref(db, `caro_invites/${currentUser.username}`));
       setCaroInvite(null);
 
-      // Chuyển người nhận sang màn hình Caro phòng này
+      // Chuyển màn hình người nhận vào thẳng phòng cờ
       setCurrentScreen(`CoCaro_${roomToJoin}`);
 
     } catch (err) {
