@@ -12,19 +12,13 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  // SỬA: Xử lý triệt để bóc tách roomId dù nhận dạng dưới dạng "CoCaro_phong_xxx" hay "phong_xxx"
-  const [roomId, setRoomId] = useState(() => {
-    if (initialRoomId) {
-      if (initialRoomId.startsWith('CoCaro_')) {
-        return initialRoomId.split('_')[1] + (initialRoomId.split('_')[2] ? '_' + initialRoomId.split('_')[2] : '');
-      }
-      if (initialRoomId !== 'CoCaro') {
-        return initialRoomId;
-      }
-    }
-    return 'phong_chung';
-  });
-
+  // MỚI: Đảm bảo bóc tách chính xác roomId từ prop truyền vào hoặc initialRoomId
+const [roomId, setRoomId] = useState(() => {
+  if (initialRoomId && initialRoomId !== 'CoCaro') {
+    return initialRoomId;
+  }
+  return 'phong_chung';
+});
   const [roomData, setRoomData] = useState(null);
   const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); 
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -35,34 +29,13 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
-
-  // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js
+    // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js (khi bấm chấp nhận lời mời)
   useEffect(() => {
-    if (initialRoomId) {
-      let resolvedId = initialRoomId;
-      if (initialRoomId.startsWith('CoCaro_')) {
-        resolvedId = initialRoomId.split('_')[1] + (initialRoomId.split('_')[2] ? '_' + initialRoomId.split('_')[2] : '');
-      }
-      if (resolvedId !== 'CoCaro' && resolvedId !== roomId) {
-        setRoomId(resolvedId);
-        setMyStatus('dang_dau');
-      }
+    if (initialRoomId && initialRoomId !== roomId) {
+      setRoomId(initialRoomId);
+      setMyStatus('dang_dau');
     }
-  }, [initialRoomId, roomId]);
-
-  // MỚI: Tự động kiểm tra trạng thái trên caro_lobby của chính mình khi vừa mount vào trang Caro từ page ngoài
-  useEffect(() => {
-    if (!username) return;
-    const myLobbyRef = ref(db, `caro_lobby/${username}`);
-    const unsubLobby = onValue(myLobbyRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data && data.matchedRoomId && data.matchedRoomId !== roomId) {
-        setRoomId(data.matchedRoomId);
-        setMyStatus('dang_dau');
-      }
-    });
-    return () => unsubLobby();
-  }, [username, roomId]);
+  }, [initialRoomId]);
   // 1. Cập nhật trạng thái user online & lấy thống kê ván đấu cá nhân
   useEffect(() => {
     if (!username) return;
@@ -205,7 +178,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
     setRoomId('phong_chung');
     setRoomData(null);
-  };  
+  };
 
   const handleToggleReady = async () => {
     if (!roomData) return;
