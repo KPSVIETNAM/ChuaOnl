@@ -8,7 +8,14 @@ import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
 import { ref, onValue, remove, update } from 'firebase/database';
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+  const savedUser = localStorage.getItem('kps_current_user');
+  try {
+    return savedUser ? JSON.parse(savedUser) : null;
+  } catch (e) {
+    return null;
+  }
+});
   const [currentScreen, setCurrentScreen] = useState('auth'); // 'auth', 'tamquan', 'chanhdien', 'TinhTamDien', 'TangKinhCac'
   
   // Dữ liệu realtime từ Firebase
@@ -93,6 +100,7 @@ useEffect(() => {
         console.error("Lỗi khi xóa trạng thái online:", error);
       }
     }
+    localStorage.removeItem('kps_current_user'); // Xóa khi đăng xuất
     setCurrentUser(null);
     setCurrentScreen('auth');
   };
