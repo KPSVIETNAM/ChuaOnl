@@ -1,25 +1,45 @@
 import React from 'react';
 
-export default function Leaderboard({ allUsers , logs }) {
+export default function Leaderboard({ allUsers = {}, logs = [], onlineUsers = {} }) {
   const leaderboard = Object.values(allUsers).sort((a, b) => (b.totalCongDuc || 0) - (a.totalCongDuc || 0));
 
   return (
     <div style={styles.container}>
       <div style={styles.section}> 
-        <h3>🏆 BẢNG CÔNG ĐỨC</h3>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#f4dfb8' }}>🏆 BẢNG CÔNG ĐỨC</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
-          {leaderboard.map((u, i) => (
-            <div key={u.username} style={styles.row}>
-              <span><b>#{i + 1}</b> {u.fullName }</span>
-              <b style={{ color: '#fb8500' }}>{u.totalCongDuc || 0}</b>
-            </div>
-          ))}
+          {leaderboard.map((u, i) => {
+            // Kiểm tra xem user này có đang trực tuyến hay không
+            const isOnline = onlineUsers && onlineUsers[u.username];
+
+            return (
+              <div key={u.username} style={styles.row}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Chấm trạng thái Online (Xanh) / Offline (Xám) */}
+                  <span 
+                    title={isOnline ? "Đang trực tuyến" : "Đã rời đi"}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: isOnline ? '#22c55e' : '#64748b',
+                      boxShadow: isOnline ? '0 0 6px #22c55e' : 'none',
+                      flexShrink: 0
+                    }} 
+                  />
+                  <span><b>#{i + 1}</b> {u.fullName || u.username}</span>
+                </div>
+                <b style={{ color: '#fb8500' }}>{u.totalCongDuc || 0}</b>
+              </div>
+            );
+          })}
         </div>
       </div>
+
       <div style={{ 
         ...styles.section, 
         marginTop: '15px',
-        maxHeight: '200px',    /* Giới hạn chiều cao tối đa (tùy chỉnh 150px - 300px tùy giao diện) */
+        maxHeight: '200px',    /* Giới hạn chiều cao tối đa */
         overflowY: 'auto'      /* Hiện thanh cuộn khi log vượt quá maxHeight */
       }}> 
         {logs.slice(-200).map((log, index) => (
