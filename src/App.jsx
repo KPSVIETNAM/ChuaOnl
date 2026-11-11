@@ -102,7 +102,7 @@ export default function App() {
       {/* Thông số thống kê */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}> 
         <span style={{ fontSize: '12px', color: '#f7dfad', background: '#0f172a', padding: '5px 10px', borderRadius: '20px', border: '1px solid #384255' }}>
-          🪵 Tổng công đức: <b style={{ color: '#fff' }}>{totalCongDucToanCty}</b>
+          🪵KPS Tổng công đức: <b style={{ color: '#fff' }}>{totalCongDucToanCty}</b>
         </span>
       </div>
 
