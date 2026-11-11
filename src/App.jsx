@@ -19,34 +19,22 @@ export default function App() {
 // State & Lắng nghe lời mời Cờ Caro riêng cho tài khoản
   const [caroInvite, setCaroInvite] = useState(null);
 
-  useEffect(() => {
-    if (!currentUser?.username) return;
-
-    const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
-    const unsubscribe = onValue(inviteRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setCaroInvite(data);
-      } else {
-        setCaroInvite(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
-// 2. TỰ ĐỘNG ĐỒNG BỘ VỊ TRÍ MÀN HÌNH LÊN FIREBASE (Thêm mới)
+ // Tự động đồng bộ vị trí màn hình hiện tại lên Firebase Realtime Database
 useEffect(() => {
   if (!currentUser?.username) return;
 
   const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
-  
-  // Cập nhật màn hình hiện tại của user
+
+  // Cập nhật đè trường currentScreen và thời gian hoạt động mới nhất
   update(userOnlineRef, {
+    username: currentUser.username,
+    fullName: currentUser.fullName || currentUser.username,
+    gender: currentUser.gender || 'khac',
     currentScreen: currentScreen,
     lastActive: Date.now()
-  }).catch(() => {}); 
-}, [currentScreen, currentUser]);
+  }).catch((err) => console.error("Lỗi cập nhật vị trí:", err));
 
+}, [currentScreen, currentUser]);
 
   // Hàm chấp nhận lời mời Caro
   const handleAcceptInvite = async () => {

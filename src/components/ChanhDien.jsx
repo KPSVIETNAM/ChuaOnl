@@ -211,28 +211,31 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
             <span>🪷</span> ĐẠI ĐIỆN KPS <span>🪷</span>
           </div>
 
-          {Object.entries(activeUsers).map(([activeUsername, user]) => {
-            const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
-            const isWaiting = queueIndex !== -1;
-            const topPosition = user.isIncensing ? '58%' : '85%';
-            let status = '';
+          {/* CỘT TRÁI: Không gian điện thờ chính */}
+    {Object.entries(activeUsers)
+      .filter(([_, user]) => user && user.currentScreen === 'chanhdien') // CHỈ LẤY NHỮNG AI ĐANG Ở MÀN HÌNH CHÁNH ĐIỆN
+      .map(([activeUsername, user]) => {
+        const queueIndex = queueList.findIndex((item) => item.username === activeUsername);
+        const isWaiting = queueIndex !== -1;
+        const topPosition = user.isIncensing ? '58%' : '85%';
+        let status = '';
 
-            if (user.isIncensing) status = user.status || 'Đang Lễ';
-            else if (isWaiting) status = `Đang xếp hàng · Số ${queueIndex + 1}`;
-            else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
+        if (user.isIncensing) status = user.status || 'Đang Lễ';
+        else if (isWaiting) status = `Đang xếp hàng · Số ${queueIndex + 1}`;
+        else status = user.status ? `${user.status}${getDots()}` : `Đang tịnh tâm${getDots()}`;
 
-            return (
-              <div
-                key={activeUsername}
-                className="temple-character"
-                style={{ left: `${user.x || 50}%`, top: topPosition }}
-              >
-                <div className="character-status">{status}</div>
-                {getAvatarIcon(user.gender)}
-                <div className="character-name">{user.fullName || activeUsername}</div>
-              </div>
-            );
-          })}
+        return (
+          <div
+            key={activeUsername}
+            className="temple-character"
+            style={{ left: `${user.x || 50}%`, top: topPosition }}
+          >
+            <div className="character-status">{status}</div>
+            {getAvatarIcon(user.gender)}
+            <div className="character-name">{user.fullName || activeUsername}</div>
+          </div>
+        );
+    })}
 
           {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>} 
           <div className="scene-online">
