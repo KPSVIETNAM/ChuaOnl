@@ -489,7 +489,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
   gap: 8px; 
   padding: 10px 2px; 
   scroll-behavior: smooth; 
-  font-size: 10px;  
+  font-size: 13px;  
 }
         .chat-message { max-width:85%; align-self:flex-start; }
         .chat-message.my-message { align-self:flex-end; }
