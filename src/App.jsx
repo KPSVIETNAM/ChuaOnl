@@ -6,18 +6,27 @@ import ChanhDien from './components/ChanhDien';
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
+
 import { ref, onValue, remove, update } from 'firebase/database';
 export default function App() {
+  // Khởi tạo currentUser an toàn từ localStorage (có try...catch chống đơ)
   const [currentUser, setCurrentUser] = useState(() => {
-  const savedUser = localStorage.getItem('kps_current_user');
-  try {
-    return savedUser ? JSON.parse(savedUser) : null;
-  } catch (e) {
-    return null;
-  }
-});
-  const [currentScreen, setCurrentScreen] = useState('auth'); // 'auth', 'tamquan', 'chanhdien', 'TinhTamDien', 'TangKinhCac'
-  
+    try {
+      const savedUser = localStorage.getItem('kps_current_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.error("Lỗi đọc localStorage:", error);
+      localStorage.removeItem('kps_current_user');
+      return null;
+    }
+  }); 
+// Tự động chuyển sang 'tamquan' nếu đã có currentUser nhưng màn hình vẫn là 'auth'
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    const savedUser = localStorage.getItem('kps_current_user');
+    return savedUser ? 'tamquan' : 'auth';
+  });
+
+
   // Dữ liệu realtime từ Firebase
   const [activeUsers, setActiveUsers] = useState({});
   const [allUsers, setAllUsers] = useState({});
@@ -89,8 +98,7 @@ useEffect(() => {
       unsubscribeLogs();
     };
   }, []);
-
-  // Hàm xử lý đăng xuất / thoát tài khoản
+// Hàm xử lý đăng xuất / thoát tài khoản
   const handleLogout = async () => {
     if (currentUser?.username) {
       try {
@@ -100,16 +108,25 @@ useEffect(() => {
         console.error("Lỗi khi xóa trạng thái online:", error);
       }
     }
-    localStorage.removeItem('kps_current_user'); // Xóa khi đăng xuất
+    // Xóa dữ liệu đăng nhập khỏi bộ nhớ máy
+    localStorage.removeItem('kps_current_user');
     setCurrentUser(null);
     setCurrentScreen('auth');
   };
 
+  // Hàm xử lý khi Đăng nhập thành công từ Auth.jsx
+  const handleLoginSuccess = (user) => {
+    try {
+      localStorage.setItem('kps_current_user', JSON.stringify(user));
+    } catch (e) {
+      console.error("Lỗi lưu localStorage:", e);
+    }
+    setCurrentUser(user);
+    setCurrentScreen('tamquan'); // Chuyển ngay sang cổng Tam Quan
+  };
+
   if (!currentUser || currentScreen === 'auth') {
-    return <Auth onLoginSuccess={(user) => {
-      setCurrentUser(user);
-      setCurrentScreen('tamquan');
-    }} />;
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
 
   if (currentScreen === 'tamquan') {

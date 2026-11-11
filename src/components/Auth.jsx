@@ -9,7 +9,7 @@ export default function Auth({ onLoginSuccess }) {
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState('nam'); // Mặc định là nam
 
-  const handleRegister = async (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const cleanUser = username.trim().toLowerCase();
     if (!cleanUser || !password || !fullName) return alert('Vui lòng điền đủ thông tin!');
@@ -59,7 +59,7 @@ export default function Auth({ onLoginSuccess }) {
     // Truyền dữ liệu user lên component cha để hiển thị trang Tam Quan
     onLoginSuccess(userData);
   };
-
+  
   return (
     <div style={styles.loginContainer}>
       <div style={styles.bgOverlay} />
@@ -73,7 +73,7 @@ export default function Auth({ onLoginSuccess }) {
           <h1 style={styles.titleOnline}>ONLINE v1.1</h1>
         </div> 
 
-        <form onSubmit={authMode === 'login' ? handleLogin : handleRegister}>
+        <form onSubmit={authMode === 'login' ? handleLogin : handleLoginSubmit}>
           {authMode === 'register' && (
             <>
               <input 
