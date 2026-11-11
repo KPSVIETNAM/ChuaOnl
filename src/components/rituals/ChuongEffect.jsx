@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase'; // điều chỉnh đường dẫn phù hợp
-import { ref, onValue } from '../../firebase/database';
+import { ref, onValue } from 'firebase/database';
 
 export function ChuongEffect() {
   const [isActive, setIsActive] = useState(false);
