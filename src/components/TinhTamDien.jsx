@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
 
-export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
+export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInput = '', setNotice }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  // Khóa lưu trạng thái Bật/Tắt âm thanh riêng cho từng tài khoản trong localStorage
-  const storageKey = `tinhtamdien_audio_${username || 'guest'}`;
-  const [isAudioPlaying, setIsAudioPlaying] = useState(() => {
-    const savedState = localStorage.getItem(storageKey);
-    return savedState !== null ? JSON.parse(savedState) : true;
+  // Khóa lưu trạng thái Bật/Tắt riêng cho từng tài khoản trong localStorage
+  const bgAudioKey = `tinhtamdien_bgaudio_${username || 'guest'}`;
+  const moKey = `tinhtamdien_mo_${username || 'guest'}`;
+
+  const [isBgAudioPlaying, setIsBgAudioPlaying] = useState(() => {
+    const saved = localStorage.getItem(bgAudioKey);
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const [isMoAutoPlaying, setIsMoAutoPlaying] = useState(() => {
+    const saved = localStorage.getItem(moKey);
+    return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [totalTinhTamCount, setTotalTinhTamCount] = useState(0);
@@ -19,7 +26,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
   const bgAudioRef = useRef(null);
   const moIntervalRef = useRef(null);
 
-  // 1. Lắng nghe tổng số lượt tịnh tâm toàn hệ thống và công đức cá nhân
+  // 1. Lắng nghe thống kê toàn hệ thống và cá nhân
   useEffect(() => {
     if (!username) return;
 
@@ -39,15 +46,14 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     };
   }, [username]);
 
-  // 2. Quản lý nhạc nền amnen.mp3 và vòng lặp gõ mõ mỗi 4 giây
+  // 2. Quản lý Nhạc nền amnen.mp3 độc lập
   useEffect(() => {
     bgAudioRef.current = new Audio('/audio/amnen.mp3');
     bgAudioRef.current.loop = true;
     bgAudioRef.current.volume = 0.2;
 
-    if (isAudioPlaying) {
+    if (isBgAudioPlaying) {
       bgAudioRef.current.play().catch(() => {});
-      startMoInterval();
     }
 
     return () => {
@@ -55,14 +61,24 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
         bgAudioRef.current.pause();
         bgAudioRef.current = null;
       }
-      stopMoInterval();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 3. Quản lý Vòng lặp Gõ mõ tự động mỗi 4s độc lập
+  useEffect(() => {
+    if (isMoAutoPlaying) {
+      startMoInterval();
+    } else {
+      stopMoInterval();
+    }
+
+    return () => stopMoInterval();
+  }, [isMoAutoPlaying]);
 
   const startMoInterval = () => {
     if (moIntervalRef.current) return;
     moIntervalRef.current = setInterval(() => {
-      playMoSound();
+      playMoSoundWithRipple();
     }, 4000);
   };
 
@@ -73,39 +89,57 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     }
   };
 
-  // Hàm phát tiếng mõ chung
-  const playMoSound = () => {
+  // Hàm phát tiếng mõ kèm hiệu ứng gợn sóng lan tỏa
+  const playMoSoundWithRipple = () => {
     const moAudio = new Audio('/audio/mo.mp3');
     moAudio.currentTime = 0;
     moAudio.play().catch(() => {});
+
+    triggerRippleEffect();
   };
 
-  // Hàm chuyển đổi Bật/Tắt âm thanh & lưu localStorage
-  const toggleAudio = () => {
-    if (!bgAudioRef.current) return;
+  // Hiệu ứng gợn sóng tỏa ra từ khu vực trung tâm (hoặc banner tịnh tâm)
+  const triggerRippleEffect = () => {
+    const banner = document.querySelector('.tinh-tam-banner');
+    if (!banner) return;
 
-    if (isAudioPlaying) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple-ring';
+    banner.appendChild(ripple);
+
+    setTimeout(() => {
+      ripple.remove();
+    }, 1500);
+  };
+
+  // Nút gạt bật/tắt nhạc nền
+  const toggleBgAudio = () => {
+    if (!bgAudioRef.current) return;
+    if (isBgAudioPlaying) {
       bgAudioRef.current.pause();
-      stopMoInterval();
-      setIsAudioPlaying(false);
-      localStorage.setItem(storageKey, JSON.stringify(false));
+      setIsBgAudioPlaying(false);
+      localStorage.setItem(bgAudioKey, JSON.stringify(false));
     } else {
       bgAudioRef.current.play().catch(() => {});
-      startMoInterval();
-      setIsAudioPlaying(true);
-      localStorage.setItem(storageKey, JSON.stringify(true));
+      setIsBgAudioPlaying(true);
+      localStorage.setItem(bgAudioKey, JSON.stringify(true));
     }
   };
 
-  // 3. Hành động Gõ Mõ Thủ Công: Phát tiếng mõ ngay lập tức và RESET lại chu kỳ 4s
+  // Nút gạt bật/tắt mõ tự động
+  const toggleMoAuto = () => {
+    const nextState = !isMoAutoPlaying;
+    setIsMoAutoPlaying(nextState);
+    localStorage.setItem(moKey, JSON.stringify(nextState));
+  };
+
+  // 4. Gõ mõ thủ công: Phát âm thanh, tạo gợn sóng và RESET nhịp 4s của mõ tự động
   const handleManualGoMo = () => {
     if (!username) return;
 
-    // Phát âm thanh gõ mõ ngay khi bấm
-    playMoSound();
+    playMoSoundWithRipple();
 
-    // Nếu nhạc nền & mõ tự động đang bật, ta reset lại đếm giờ 4s để tránh bị trùng lặp âm thanh dồn dập
-    if (isAudioPlaying) {
+    if (isMoAutoPlaying) {
       stopMoInterval();
       startMoInterval();
     }
@@ -121,16 +155,14 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
 
   return (
     <div className="tinh-tam-container">
-      {/* Thanh điều khiển phụ ở góc trên Tịnh Tâm Điện */}
+      {/* Các nút gạt điều khiển âm thanh riêng biệt */}
       <div className="tinh-tam-top-bar">
-        {onBack && (
-          <button onClick={onBack} className="back-button">
-            ← Quay lại Chánh Điện
-          </button>
-        )}
+        <button onClick={toggleBgAudio} className={`audio-toggle-btn ${isBgAudioPlaying ? 'active' : 'muted'}`}>
+          {isBgAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
+        </button>
 
-        <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`}>
-          {isAudioPlaying ? '🔊 Âm thanh & Mõ tự động: Bật' : '🔇 Âm thanh & Mõ tự động: Tắt'}
+        <button onClick={toggleMoAuto} className={`audio-toggle-btn ${isMoAutoPlaying ? 'active' : 'muted'}`}>
+          {isMoAutoPlaying ? '🪵 Mõ tự động (4s): Bật' : '🪵 Mõ tự động (4s): Tắt'}
         </button>
       </div>
 
@@ -181,23 +213,11 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
         .tinh-tam-top-bar {
           width: 100%;
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-end;
+          gap: 10px;
           align-items: center;
           margin-bottom: 15px;
-        }
-        .back-button {
-          padding: 6px 14px;
-          background: #334155;
-          color: #fff;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 13px;
-          transition: background 0.2s;
-        }
-        .back-button:hover {
-          background: #475569;
+          flex-wrap: wrap;
         }
         .audio-toggle-btn {
           padding: 6px 14px;
@@ -249,12 +269,39 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
           margin-bottom: 20px;
           border: 1px solid rgba(232,189,112,.35);
           box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+          position: relative;
         }
         .tinh-tam-img {
           width: 100%;
           height: 300px;
           object-fit: cover;
           display: block;
+        }
+        /* CSS Hiệu ứng gợn sóng lan tỏa */
+        .ripple-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 30px;
+          height: 30px;
+          border: 2px solid rgba(247, 223, 173, 0.8);
+          border-radius: 50%;
+          animation: rippleEffect 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+          pointer-events: none;
+          z-index: 10;
+        }
+        @keyframes rippleEffect {
+          0% {
+            width: 20px;
+            height: 20px;
+            opacity: 1;
+          }
+          100% {
+            width: 350px;
+            height: 350px;
+            opacity: 0;
+          }
         }
         .tinh-tam-stats-group {
           display: flex;
@@ -267,7 +314,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
           padding: 8px 15px;
           background: #171f2d;
           border: 1px solid #384255;
-          border-radius: 20px; tiếng gõ mõ
+          border-radius: 20px;
           font-size: 12px;
           color: #f7dfad;
         }
