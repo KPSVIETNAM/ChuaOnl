@@ -141,7 +141,11 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   return (
     <div className="tang-kinh-container">
       <div className="tang-kinh-header-bar"> 
-        
+        {onBack && (
+          <button onClick={onBack} className="back-button">
+            ← Quay lại Chánh Điện
+          </button>
+        )}
         <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`}>
           {isAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
         </button>
