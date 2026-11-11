@@ -113,15 +113,19 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         const playerKeys = Object.keys(data.players);
         if (playerKeys.length === 2) {
           const opponentKey = playerKeys.find(k => k !== username);
-          // Nếu đối phương mất khỏi activeUsers hoặc sảnh lobby
-          if (opponentKey && activeUsers && !activeUsers[opponentKey]) {
-            update(roomRef, {
-              status: 'finished',
-              winner: fullName,
-              winReason: 'Đối phương đã rời trận!'
-            });
-            recordGameResult(username, opponentKey);
-          }
+    // Nếu đối phương mất khỏi activeUsers
+    if (opponentKey && activeUsers && !activeUsers[opponentKey]) {
+      // Đổi trạng thái thành hủy / kết thúc hòa không tính điểm
+      update(roomRef, {
+        status: 'cancelled',
+        winner: 'Hủy trận',
+        winReason: 'Đối phương đã rời trận. Ván đấu không được tính kết quả.'
+      });
+      
+      // Đưa bản thân về trạng thái rảnh
+      setMyStatus('dang_doi');
+      update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
+    }
         }
       }
     });
