@@ -250,7 +250,12 @@ const [roomId, setRoomId] = useState(() => {
       roomId: newRoomId,
       timestamp: Date.now()
     });
-
+    //    Cập nhật trạng thái sảnh của chính người mời lên Firebase thành 'dang_dau'
+    await update(ref(db, `caro_lobby/${username}`), {
+      status: 'dang_dau',
+      roomId: newRoomId,
+      matchedRoomId: newRoomId
+    });
     setShowInviteModal(false);
     setRoomId(newRoomId);
     setMyStatus('dang_dau');
