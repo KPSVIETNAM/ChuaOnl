@@ -143,8 +143,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
   const handleRandomMatch = async () => {
     setMyStatus('dang_tim_ghep');
-    await update(ref(db, `caro_lobby/${username}`), { status: 'dang_tim_ghep', matchedRoomId: null });
-    if (setNotice) setNotice('🔍 Đang tìm kỳ thủ cùng chí hướng...');
+    await update(ref(db, `caro_lobby/${username}`), { status: 'dang_tim_ghep', matchedRoomId: null }); 
   };
 
   const handleCancelMatch = async () => {

@@ -276,7 +276,7 @@ export default function App() {
           setNotice={(msg) => alert(msg)}
           onBack={() => setCurrentScreen('tamquan')}
         />
-        {renderCaroInvitePopup()}
+        {/* {renderCaroInvitePopup()} */}
       </div>
     );
   }
