@@ -45,7 +45,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     };
   }, [username, fullName]);
 
-  // 2. Lắng nghe danh sách sảnh & TỰ ĐỘNG GHÉP ĐÔI TRỰC TIẾP VÀO PHÒNG (KHÔNG DÙNG POPUP)
+  // 2. Lắng nghe danh sách sảnh & TỰ ĐỘNG GHÉP ĐÔI TRỰC TIẾP VÀO PHÒNG
   useEffect(() => {
     const lobbyRef = ref(db, 'caro_lobby');
     const unsub = onValue(lobbyRef, async (snapshot) => {
@@ -62,18 +62,18 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
             const newRoomId = `phong_${Date.now()}`;
             const opponent = lobbyData[otherSearchingUserKey];
 
-            // Tạo phòng mới ở trạng thái chờ sẵn sàng (waiting)
             await set(ref(db, `caro_rooms/${newRoomId}`), {
               players: {
-                [username]: { fullName, ready: false, symbol: 'X' },
-                [opponent.username]: { fullName: opponent.fullName, ready: false, symbol: 'O' }
+                [username]: { fullName, ready: false, symbol: 'X', ruleRequest: false },
+                [opponent.username]: { fullName: opponent.fullName, ready: false, symbol: 'O', ruleRequest: false }
               },
               board: Array(TOTAL_CELLS).fill(''),
               turn: '',
-              status: 'waiting'
+              status: 'waiting',
+              blockRule: false,
+              winningLine: []
             });
 
-            // Cập nhật trạng thái sảnh của cả hai người sang roomId mới để tự động nhảy vào
             await update(ref(db, `caro_lobby/${username}`), { status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId });
             await update(ref(db, `caro_lobby/${opponent.username}`), { status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId });
 
@@ -84,9 +84,8 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       }
     });
     return () => unsub();
-  }, [myStatus, username, fullName, setNotice]);
+  }, [myStatus, username, fullName]);
 
-  // Lắng nghe sự thay đổi roomId từ lobby của chính mình (dành cho người có chuỗi tên lớn hơn khi ghép ngẫu nhiên)
   useEffect(() => {
     const myLobbyRef = ref(db, `caro_lobby/${username}`);
     const unsub = onValue(myLobbyRef, (snapshot) => {
@@ -99,7 +98,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     return () => unsub();
   }, [username, roomId]);
 
-  // 3. Lắng nghe phòng cờ hiện tại & xử lý khi đối phương thoát trận (KHÔNG TÍNH ĐIỂM)
+  // 3. Lắng nghe phòng cờ hiện tại
   useEffect(() => {
     if (!roomId) return;
     const roomRef = ref(db, `caro_rooms/${roomId}`);
@@ -114,7 +113,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         setChatMessages([]);
       }
 
-      // Xử lý khi đối phương rời trận giữa chừng trong lúc đang chơi -> Hủy trận, KHÔNG tính điểm
       if (data.status === 'playing' && data.players) {
         const playerKeys = Object.keys(data.players);
         if (playerKeys.length === 2) {
@@ -150,7 +148,26 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null }); 
   };
 
-  // Nút Sẵn Sàng / Hủy Sẵn Sàng trong phòng
+  // Nút Thoát Trận
+  const handleLeaveRoom = async () => {
+    if (roomId && roomId !== 'phong_chung') {
+      const roomRef = ref(db, `caro_rooms/${roomId}`);
+      if (roomData && roomData.status === 'playing') {
+        // Nếu đang chơi mà thoát -> xử lý hủy trận hoặc xử lý đối thủ thắng tùy logic
+        await update(roomRef, {
+          status: 'cancelled',
+          winner: 'Hủy trận',
+          winReason: `${fullName} đã rời trận. Ván đấu kết thúc.`
+        });
+      }
+    }
+    setMyStatus('dang_doi');
+    await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
+    setRoomId('phong_chung');
+    setRoomData(null);
+    if (onBack) onBack();
+  };
+
   const handleToggleReady = async () => {
     if (!roomData) return;
     const isReady = roomData.players?.[username]?.ready || false;
@@ -171,7 +188,30 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     });
   };
 
-  // Mời người chơi Online trực tiếp (Gửi lời mời qua bảng mời)
+  const handleToggleRuleRequest = async () => {
+    if (!roomData) return;
+    const players = roomData.players || {};
+    const currentRuleReq = players[username]?.ruleRequest || false;
+    
+    const updatedPlayers = {
+      ...players,
+      [username]: { ...players[username], ruleRequest: !currentRuleReq }
+    };
+
+    const playerKeys = Object.keys(updatedPlayers);
+    const bothAgreed = playerKeys.length === 2 && playerKeys.every(k => updatedPlayers[k]?.ruleRequest);
+
+    let updates = { players: updatedPlayers };
+    if (bothAgreed) {
+      updates.blockRule = !roomData.blockRule;
+      playerKeys.forEach(k => {
+        updatedPlayers[k].ruleRequest = false;
+      });
+    }
+
+    await update(ref(db, `caro_rooms/${roomId}`), updates);
+  };
+
   const handleInviteUser = async (targetUsername, targetUserObj) => {
     const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' || targetUserObj?.status?.includes('tịnh tâm');
     if (isMeditating) {
@@ -184,10 +224,12 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
     await set(ref(db, `caro_rooms/${newRoomId}`), {
       players: {
-        [username]: { fullName, ready: true, symbol: 'X' }
+        [username]: { fullName, ready: true, symbol: 'X', ruleRequest: false }
       },
       board: Array(TOTAL_CELLS).fill(''),
-      status: 'waiting'
+      status: 'waiting',
+      blockRule: false,
+      winningLine: []
     });
 
     await set(ref(db, `caro_invites/${targetUsername}`), {
@@ -197,7 +239,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       timestamp: Date.now()
     });
 
-    // if (setNotice) setNotice(`Đã gửi lời mời thách đấu tới ${targetUserObj.fullName || targetUsername}!`);
     setShowInviteModal(false);
   };
 
@@ -222,6 +263,42 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     runTransaction(ref(db, `users/${loserName}/caroStats/losses`), (c) => (c || 0) + 1);
   };
 
+  const checkWinAndGetLine = (board, idx, symbol, blockRule) => {
+    const row = Math.floor(idx / BOARD_SIZE);
+    const col = idx % BOARD_SIZE;
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+    for (let [dx, dy] of directions) {
+      let line = [idx];
+      
+      let r = row + dx;
+      let c = col + dy;
+      while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r * BOARD_SIZE + c] === symbol) {
+        line.push(r * BOARD_SIZE + c);
+        r += dx;
+        c += dy;
+      }
+      let forwardBlocked = (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE || (board[r * BOARD_SIZE + c] !== '' && board[r * BOARD_SIZE + c] !== symbol));
+
+      r = row - dx;
+      c = col - dy;
+      while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r * BOARD_SIZE + c] === symbol) {
+        line.push(r * BOARD_SIZE + c);
+        r -= dx;
+        c -= dy;
+      }
+      let backwardBlocked = (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE || (board[r * BOARD_SIZE + c] !== '' && board[r * BOARD_SIZE + c] !== symbol));
+
+      if (line.length >= 5) {
+        if (blockRule && forwardBlocked && backwardBlocked) {
+          continue; 
+        }
+        return line;
+      }
+    }
+    return null;
+  };
+
   const handleCellClick = async (index) => {
     if (!roomData || roomData.status !== 'playing') return;
     if (roomData.turn !== username) return;
@@ -232,11 +309,12 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     newBoard[index] = mySymbol;
 
     const otherPlayer = Object.keys(roomData.players).find(k => k !== username);
-    const isWin = checkWin(newBoard, index, mySymbol);
+    const winningLine = checkWinAndGetLine(newBoard, index, mySymbol, roomData.blockRule);
+    const isWin = winningLine !== null;
 
     const filledCount = newBoard.filter(cell => cell !== '').length;
     const remainingCells = TOTAL_CELLS - filledCount;
-    const isDraw = !isWin && filledCount >= Math.floor(TOTAL_CELLS * 0.85);
+    const isDraw = !isWin && filledCount >= TOTAL_CELLS;
 
     let newStatus = 'playing';
     let winnerName = null;
@@ -255,6 +333,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       turn: isWin || isDraw ? '' : otherPlayer,
       status: newStatus,
       winner: winnerName,
+      winningLine: winningLine || [],
       remainingCells: remainingCells
     });
 
@@ -289,7 +368,9 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         status: 'playing',
         turn: firstUser,
         winner: null,
-        winReason: null
+        winReason: null,
+        winningLine: [],
+        remainingCells: null
       });
       setMyStatus('dang_dau');
     } else {
@@ -299,35 +380,15 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     }
   };
 
-  const checkWin = (board, idx, symbol) => {
-    const row = Math.floor(idx / BOARD_SIZE);
-    const col = idx % BOARD_SIZE;
-    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
-
-    for (let [dx, dy] of directions) {
-      let count = 1;
-      for (let i = 1; i < 5; i++) {
-        const r = row + dx * i;
-        const c = col + dy * i;
-        if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r * BOARD_SIZE + c] === symbol) count++;
-        else break;
-      }
-      for (let i = 1; i < 5; i++) {
-        const r = row - dx * i;
-        const c = col - dy * i;
-        if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r * BOARD_SIZE + c] === symbol) count++;
-        else break;
-      }
-      if (count >= 5) return true;
-    }
-    return false;
-  };
-
   const players = roomData?.players || {};
   const isMyReady = players[username]?.ready || false;
-  const isRematchRequested = players[username]?.rematchRequested || false;
+  const isMyRuleReq = players[username]?.ruleRequest || false;
   const opponentUsername = Object.keys(players).find(k => k !== username);
-  const isOpponentRematchRequested = opponentUsername ? players[opponentUsername]?.rematchRequested : false;
+  const opponentData = opponentUsername ? players[opponentUsername] : null;
+  const isOpponentRuleReq = opponentData?.ruleRequest || false;
+  const isRematchRequested = players[username]?.rematchRequested || false;
+  const winningLine = roomData?.winningLine || [];
+  const blockRule = roomData?.blockRule || false;
 
   const renderStatusLabel = (st) => {
     if (st === 'dang_tim_ghep') return <span style={{ color: '#38bdf8' }}>🔍 Đang tìm ghép đôi</span>;
@@ -338,24 +399,27 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   return (
     <div className="caro-container">
       <div className="caro-header">
-        <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={handleLeaveRoom} className="leave-room-btn">🚪 Thoát trận</button>
+          <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
+        </div>
         
         <div className="my-stats-badge">
-          🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ thắng: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
+          🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}> 
+        <div style={{ display: 'flex', gap: '8px' }}> 
           {myStatus === 'dang_tim_ghep' ? (
             <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
           ) : (
             <button onClick={handleRandomMatch} className="random-match-btn">🎲 Ghép Ngẫu Nhiên</button>
           )}
-          <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời Đạo Hữu</button>
+          <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời</button>
         </div>
       </div>
 
       <div className="lobby-status-panel">
-        <h4 style={{ margin: '0 0 8px 0', color: '#f7dfad', fontSize: '12px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
+        <h4 style={{ margin: '0 0 6px 0', color: '#f7dfad', fontSize: '11px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
         <div className="lobby-players-grid">
           {Object.entries(allLobbyPlayers)
           .filter(([u]) => u !== username)
@@ -369,7 +433,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
       <div className="caro-status-bar">
         <div className="players-info">
-          {Object.entries(players).length === 0 ? (
+          {Object.keys(players).length === 0 ? (
             <span style={{ fontSize: '12px', color: '#94a3b8' }}>Phòng trống, hãy bấm Ghép Ngẫu Nhiên hoặc Mời đạo hữu!</span>
           ) : (
             Object.entries(players).map(([uname, p]) => (
@@ -379,6 +443,20 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
             ))
           )}
         </div>
+
+        {Object.keys(players).length === 2 && (
+          <div className="rule-box">
+            <div style={{ fontSize: '9px', color: '#cbd5e1', marginBottom: '2px' }}>
+              Chặn 2 đầu: <b style={{ color: blockRule ? '#ef4444' : '#10b981' }}>{blockRule ? 'BẬT' : 'TẮT'}</b>
+            </div>
+            <button onClick={handleToggleRuleRequest} className={`rule-btn ${isMyRuleReq ? 'active' : ''}`}>
+              {isMyRuleReq ? '✅ Đã đồng ý đổi' : '⚙️ Đổi luật (2 bên)'}
+            </button>
+            {isOpponentRuleReq && !isMyRuleReq && (
+              <div style={{ fontSize: '9px', color: '#38bdf8', marginTop: '1px' }}>Đối phương muốn đổi luật!</div>
+            )}
+          </div>
+        )}
 
         {roomData?.status === 'waiting' && Object.keys(players).length > 0 && (
           <button onClick={handleToggleReady} className={`ready-btn ${isMyReady ? 'is-ready' : ''}`}>
@@ -392,31 +470,25 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
           </div>
         )}
 
+        {/* Khung Kết Quả Đã Được Thu Gọn Gàng */}
         {roomData?.status === 'finished' && (
-          <div className="win-notice-box">
-            <div className="win-notice">
-              🎉 <b>{roomData.winner === 'Hòa (Draw)' ? '🤝 TRẬN ĐẤU HÒA!' : `${roomData.winner} CHIẾN THẮNG! 🌸`}</b>
-              {roomData.winReason && <div style={{ fontSize: '11px', color: '#facc15' }}>{roomData.winReason}</div>}
-              {roomData.remainingCells !== undefined && <div style={{ fontSize: '11px', color: '#cbd5e1' }}>Còn lại {roomData.remainingCells} ô trên bàn cờ.</div>}
+          <div className="win-notice-box-compact">
+            <div className="win-text">
+              🎉 <b>{roomData.winner === 'Hòa (Draw)' ? '🤝 HÒA!' : `${roomData.winner} THẮNG!`}</b>
+              {roomData.remainingCells !== undefined && <span style={{ fontSize: '10px', color: '#94a3b8', marginLeft: '6px' }}>(Còn {roomData.remainingCells} ô)</span>}
             </div>
-
-            <div style={{ marginTop: '8px' }}>
-              <button 
-                onClick={handleRequestRematch} 
-                disabled={isRematchRequested}
-                className={`rematch-btn ${isRematchRequested ? 'requested' : ''}`}
-              >
-                {isRematchRequested ? '⏳ Đang chờ đối phương xác nhận...' : '🔄 Chơi lại ván mới'}
-              </button>
-              {isOpponentRematchRequested && !isRematchRequested && (
-                <div style={{ fontSize: '10px', color: '#38bdf8', marginTop: '2px' }}>Đối phương muốn chơi lại! Hãy bấm nút chơi lại.</div>
-              )}
-            </div>
+            <button 
+              onClick={handleRequestRematch} 
+              disabled={isRematchRequested}
+              className={`rematch-btn-compact ${isRematchRequested ? 'requested' : ''}`}
+            >
+              {isRematchRequested ? '⏳ Đang chờ...' : '🔄 Chơi lại'}
+            </button>
           </div>
         )}
 
         {roomData?.status === 'cancelled' && (
-          <div style={{ color: '#f87171', fontSize: '12px', fontWeight: 'bold' }}>
+          <div style={{ color: '#f87171', fontSize: '11px', fontWeight: 'bold' }}>
             ⚠️ {roomData.winReason || 'Ván đấu đã bị hủy.'}
           </div>
         )}
@@ -425,16 +497,19 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       <div className="caro-main-layout">
         <div className="caro-board">
           {roomData?.board ? (
-            roomData.board.map((cell, idx) => (
-              <button 
-                key={idx} 
-                className={`caro-cell ${cell}`}
-                onClick={() => handleCellClick(idx)}
-                disabled={roomData.status !== 'playing'}
-              >
-                {cell}
-              </button>
-            ))
+            roomData.board.map((cell, idx) => {
+              const isWinningCell = winningLine.includes(idx);
+              return (
+                <button 
+                  key={idx} 
+                  className={`caro-cell ${cell} ${isWinningCell ? 'winning-cell' : ''}`}
+                  onClick={() => handleCellClick(idx)}
+                  disabled={roomData.status !== 'playing'}
+                >
+                  {cell}
+                </button>
+              );
+            })
           ) : (
             Array(TOTAL_CELLS).fill('').map((_, idx) => (
               <div key={idx} className="caro-cell"></div>
@@ -517,55 +592,69 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       )}
 
       <style>{`
-        .caro-container { max-width: 1000px; margin: 0 auto; padding: 20px; background: #171d2b; border-radius: 16px; color: #fff; text-align: center; }
-        .caro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-        .my-stats-badge { background: #1e293b; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid #334155; color: #f7dfad; }
-        .invite-btn { padding: 8px 14px; background: #b45309; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        .random-match-btn { padding: 8px 14px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        .cancel-match-btn { padding: 8px 14px; background: #dc2626; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .caro-container { max-width: 1000px; margin: 0 auto; padding: 15px; background: #171d2b; border-radius: 16px; color: #fff; text-align: center; }
+        .caro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .my-stats-badge { background: #1e293b; padding: 5px 10px; border-radius: 20px; font-size: 11px; border: 1px solid #334155; color: #f7dfad; }
+        .invite-btn { padding: 6px 12px; background: #b45309; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .random-match-btn { padding: 6px 12px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .cancel-match-btn { padding: 6px 12px; background: #dc2626; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .leave-room-btn { padding: 6px 12px; background: #475569; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .leave-room-btn:hover { background: #64748b; }
         
-        .lobby-status-panel { background: #1e293b; padding: 10px 15px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #334155; text-align: left; }
-        .lobby-players-grid { display: flex; flex-wrap: wrap; gap: 8px; max-height: 80px; overflow-y: auto; }
-        .lobby-player-pill { background: #0f172a; padding: 4px 10px; border-radius: 6px; font-size: 11px; border: 1px solid #384255; }
+        .lobby-status-panel { background: #1e293b; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155; text-align: left; }
+        .lobby-players-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 70px; overflow-y: auto; }
+        .lobby-player-pill { background: #0f172a; padding: 3px 8px; border-radius: 6px; font-size: 10px; border: 1px solid #384255; }
 
-        .caro-status-bar { background: #202737; padding: 10px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .player-badge { padding: 4px 10px; background: #334155; border-radius: 20px; font-size: 12px; }
+        .caro-status-bar { background: #202737; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .player-badge { padding: 3px 8px; background: #334155; border-radius: 20px; font-size: 11px; }
         .player-badge.ready { background: #065f46; color: #a7f3d0; }
-        .ready-btn { padding: 8px 18px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .ready-btn { padding: 6px 14px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; }
         .ready-btn.is-ready { background: #dc2626; }
         
-        .win-notice-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .rematch-btn { padding: 6px 14px; background: #d97706; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
-        .rematch-btn.requested { background: #475569; cursor: not-allowed; }
+        .rule-box { background: #1e293b; padding: 4px 8px; border-radius: 6px; border: 1px solid #334155; text-align: center; }
+        .rule-btn { padding: 3px 8px; background: #475569; color: #fff; border: none; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; margin-top: 1px; }
+        .rule-btn.active { background: #059669; }
 
-        .caro-main-layout { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-        .caro-board { display: grid; grid-template-columns: repeat(15, 1fr); gap: 2px; background: #34394a; padding: 4px; border-radius: 8px; width: 100%; max-width: 520px; aspect-ratio: 1; }
-        .caro-cell { background: #1e293b; border: none; font-size: 14px; font-weight: bold; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
+        /* Khung kết quả thu gọn */
+        .win-notice-box-compact { display: flex; align-items: center; gap: 10px; background: #1e293b; padding: 4px 10px; border-radius: 6px; border: 1px solid #f59e0b; }
+        .win-text { font-size: 11px; color: #fbbf24; }
+        .rematch-btn-compact { padding: 4px 10px; background: #d97706; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; }
+        .rematch-btn-compact.requested { background: #475569; cursor: not-allowed; }
+
+        .caro-main-layout { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .caro-board { display: grid; grid-template-columns: repeat(15, 1fr); gap: 2px; background: #34394a; padding: 4px; border-radius: 8px; width: 100%; max-width: 500px; aspect-ratio: 1; }
+        .caro-cell { background: #1e293b; border: none; font-size: 13px; font-weight: bold; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
         .caro-cell:hover { background: #334155; }
         .caro-cell.X { color: #ef4444; }
         .caro-cell.O { color: #3b82f6; }
+        
+        .caro-cell.winning-cell { background: #fbbf24 !important; color: #000 !important; animation: pulseWin 0.8s infinite alternate; }
+        @keyframes pulseWin {
+          from { transform: scale(1); box-shadow: 0 0 4px #fbbf24; }
+          to { transform: scale(1.08); box-shadow: 0 0 10px #f59e0b; z-index: 10; }
+        }
 
-        .caro-chat-box { width: 300px; height: 520px; background: #202737; border: 1px solid #34394a; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; text-align: left; }
-        .caro-chat-title { padding: 10px 14px; background: #171f2d; font-size: 13px; font-weight: bold; color: #ffb703; border-bottom: 1px solid #334155; }
-        .caro-chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
+        .caro-chat-box { width: 280px; height: 500px; background: #202737; border: 1px solid #34394a; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; text-align: left; }
+        .caro-chat-title { padding: 8px 12px; background: #171f2d; font-size: 12px; font-weight: bold; color: #ffb703; border-bottom: 1px solid #334155; }
+        .caro-chat-messages { flex: 1; padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
         .caro-msg { max-width: 85%; align-self: flex-start; }
         .caro-msg.my-msg { align-self: flex-end; }
         .caro-msg-meta { display: flex; gap: 6px; margin-bottom: 2px; font-size: 9px; color: #94a3b8; }
         .caro-msg-meta strong { color: #f7dfad; }
-        .caro-msg-bubble { padding: 6px 10px; background: #334155; color: #f1f5f9; border-radius: 8px; line-height: 1.4; word-break: break-word; }
+        .caro-msg-bubble { padding: 5px 8px; background: #334155; color: #f1f5f9; border-radius: 6px; line-height: 1.3; word-break: break-word; }
         .caro-msg.my-msg .caro-msg-bubble { background: #b45309; color: #fff; }
         .chat-empty { text-align: center; color: #94a3b8; margin: auto; }
-        .caro-chat-form { display: flex; padding: 8px; background: #171f2d; border-top: 1px solid #334155; gap: 6px; }
-        .caro-chat-form input { flex: 1; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 11px; outline: none; }
-        .caro-chat-form button { padding: 6px 12px; background: #b45309; color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; }
+        .caro-chat-form { display: flex; padding: 6px; background: #171f2d; border-top: 1px solid #334155; gap: 6px; }
+        .caro-chat-form input { flex: 1; padding: 5px 8px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 11px; outline: none; }
+        .caro-chat-form button { padding: 5px 10px; background: #b45309; color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #1e293b; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: left; }
-        .online-list { max-height: 250px; overflow-y: auto; margin: 15px 0; display: flex; flex-direction: column; gap: 8px; }
-        .online-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
-        .send-invite-btn { padding: 4px 10px; background: #059669; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .modal-content { background: #1e293b; padding: 18px; border-radius: 12px; width: 90%; max-width: 380px; text-align: left; }
+        .online-list { max-height: 220px; overflow-y: auto; margin: 12px 0; display: flex; flex-direction: column; gap: 6px; }
+        .online-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+        .send-invite-btn { padding: 3px 8px; background: #059669; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
         .send-invite-btn.disabled { background: #475569; cursor: not-allowed; }
-        .close-btn { width: 100%; padding: 8px; background: #334155; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        .close-btn { width: 100%; padding: 6px; background: #334155; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
       `}</style>
     </div>
   );
