@@ -225,7 +225,7 @@ export default function App() {
       </div>
     );
   }
-  // 4. Màn hình Cờ Caro  
+ // 4. Màn hình Cờ Caro 
   if (currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_')) {
     const roomId = currentScreen.includes('_') ? currentScreen.split('_')[1] : 'phong_chung';
     return (

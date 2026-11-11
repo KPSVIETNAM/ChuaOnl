@@ -10,13 +10,11 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
   const [roomId, setRoomId] = useState(initialRoomId || 'phong_chung');
   const [roomData, setRoomData] = useState(null);
-  const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); // Quản lý danh sách tất cả người chơi trong sảnh cờ
+  const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); 
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // Trạng thái cá nhân trong sảnh cờ: 'dang_doi', 'dang_tim_ghep', 'dang_dau'
   const [myStatus, setMyStatus] = useState('dang_doi');
 
-  // Khung chat riêng trong phòng
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
@@ -25,9 +23,8 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   useEffect(() => {
     if (!username) return;
     const userOnlineRef = ref(db, `online_users/${username}`);
-    update(userOnlineRef, { currentScreen: 'caro', caroStatus: 'dang_doi' });
+    update(userOnlineRef, { currentScreen: 'caro', caroStatus: 'dang_doi', fullName });
 
-    // Đăng ký user vào danh sách sảnh cờ toàn cục
     const lobbyUserRef = ref(db, `caro_lobby/${username}`);
     set(lobbyUserRef, { username, fullName, status: 'dang_doi', roomId: 'phong_chung' });
 
@@ -35,9 +32,9 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       update(userOnlineRef, { currentScreen: 'idle' });
       remove(lobbyUserRef);
     };
-  }, [username]);
+  }, [username, fullName]);
 
-  // 2. Lắng nghe danh sách tất cả người chơi trong sảnh cờ Caro để mọi người cùng thấy
+  // 2. Lắng nghe danh sách tất cả người chơi trong sảnh cờ Caro
   useEffect(() => {
     const lobbyRef = ref(db, 'caro_lobby');
     const unsub = onValue(lobbyRef, (snapshot) => {
@@ -63,7 +60,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     return () => unsub();
   }, [roomId]);
 
-  // Tự động cuộn chat
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
@@ -80,17 +76,14 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     if (!lobbySnapshot.exists()) return;
 
     const lobbyData = lobbySnapshot.val();
-    // Tìm người khác đang 'dang_tim_ghep' và không phải là mình
     const matchedUserKey = Object.keys(lobbyData).find(
       (u) => u !== username && lobbyData[u].status === 'dang_tim_ghep'
     );
 
     if (matchedUserKey) {
-      // Tìm thấy đối thủ! Tạo phòng mới ngẫu nhiên
       const newRoomId = `phong_${Date.now()}`;
       const opponent = lobbyData[matchedUserKey];
 
-      // Cập nhật trạng thái cả 2 vào phòng mới
       await set(ref(db, `caro_rooms/${newRoomId}`), {
         players: {
           [username]: { fullName, ready: true, symbol: 'X' },
@@ -98,10 +91,9 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         },
         board: Array(BOARD_SIZE * BOARD_SIZE).fill(''),
         turn: username,
-        status: 'playing' // Bắt đầu đánh luôn vì cả 2 đã sẵn sàng ghép
+        status: 'playing'
       });
 
-      // Gửi tín hiệu chuyển phòng cho đối thủ thông qua node riêng
       await set(ref(db, `caro_invites/${opponent.username}`), {
         fromUsername: username,
         fromFullName: fullName,
@@ -114,19 +106,16 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       update(ref(db, `caro_lobby/${username}`), { status: 'dang_dau', roomId: newRoomId });
       setNotice(`🎉 Đã ghép cặp thành công với ${opponent.fullName}! Trận đấu bắt đầu.`);
     } else {
-      // Nếu chưa có ai, lắng nghe xem có ai vào ghép cùng không
       setNotice('Đang chờ kỳ thủ khác tham gia ghép đôi...');
     }
   };
 
-  // Hủy tìm ghép ngẫu nhiên
   const handleCancelMatch = async () => {
     setMyStatus('dang_doi');
     update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi' });
     setNotice('Đã hủy tìm trận.');
   };
 
-  // Nút Sẵn Sàng trong phòng riêng (Đợi người kia bắt đầu là đánh luôn)
   const handleToggleReady = async () => {
     if (!roomData) return;
     const isReady = roomData.players?.[username]?.ready || false;
@@ -138,7 +127,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     };
 
     const playerKeys = Object.keys(updatedPlayers);
-    // Nếu đủ 2 người và cả 2 đều bấm Sẵn sàng -> chuyển sang 'playing' đánh luôn
     const allReady = playerKeys.length === 2 && playerKeys.every(k => updatedPlayers[k].ready);
 
     await update(ref(db, `caro_rooms/${roomId}`), {
@@ -151,9 +139,10 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     update(ref(db, `caro_lobby/${username}`), { status: allReady ? 'dang_dau' : 'dang_doi' });
   };
 
-  // Mời người chơi Online (Chặn nếu đang ở Tịnh Tâm Điện)
+  // Mời người chơi Online trên toàn hệ thống
   const handleInviteUser = async (targetUsername, targetUserObj) => {
-    if (targetUserObj?.currentScreen === 'TinhTamDien' || targetUserObj?.status?.includes('tịnh tâm')) {
+    const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien' || targetUserObj?.status?.includes('tịnh tâm');
+    if (isMeditating) {
       setNotice(`Đạo hữu ${targetUserObj.fullName || targetUsername} đang tịnh tâm, không thể quấy rầy! 🧘`);
       return;
     }
@@ -169,7 +158,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setShowInviteModal(false);
   };
 
-  // Gửi tin nhắn chat riêng trong phòng
   const handleSendChat = (e) => {
     e.preventDefault();
     const text = chatInput.trim();
@@ -185,7 +173,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setChatInput('');
   };
 
-  // Logic đánh cờ
   const handleCellClick = async (index) => {
     if (!roomData || roomData.status !== 'playing') return;
     if (roomData.turn !== username) return;
@@ -238,7 +225,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const players = roomData?.players || {};
   const isMyReady = players[username]?.ready || false;
 
-  // Trạng thái tiếng Việt hiển thị cho các kỳ thủ
   const renderStatusLabel = (st) => {
     if (st === 'dang_tim_ghep') return <span style={{ color: '#38bdf8' }}>🔍 Đang tìm ghép đôi</span>;
     if (st === 'dang_dau') return <span style={{ color: '#ef4444' }}>⚔️ Đang đấu cờ</span>;
@@ -250,6 +236,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       <div className="caro-header">
         <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={onBack} className="cancel-match-btn" style={{ background: '#334155' }}>← Quay lại</button>
           {myStatus === 'dang_tim_ghep' ? (
             <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
           ) : (
@@ -259,11 +246,12 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         </div>
       </div>
 
-      {/* BẢNG QUẢN LÝ TRẠNG THÁI TẤT CẢ NGƯỜI CHƠI TRONG SẢNH CỜ */}
       <div className="lobby-status-panel">
         <h4 style={{ margin: '0 0 8px 0', color: '#f7dfad', fontSize: '12px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
         <div className="lobby-players-grid">
-          {Object.entries(allLobbyPlayers).map(([u, p]) => (
+          {Object.entries(allLobbyPlayers)
+          .filter(([u]) => u !== username) // <-- Lọc chính mình
+          .map(([u, p]) => (
             <div key={u} className="lobby-player-pill">
               <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
             </div>
@@ -271,7 +259,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         </div>
       </div>
 
-      {/* Trạng thái phòng chơi & Nút Sẵn sàng */}
       <div className="caro-status-bar">
         <div className="players-info">
           {Object.entries(players).length === 0 ? (
@@ -304,7 +291,6 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         )}
       </div>
 
-      {/* GIAO DIỆN BÀN CỜ & KHUNG CHAT RIÊNG */}
       <div className="caro-main-layout">
         <div className="caro-board">
           {roomData?.board ? (
@@ -357,25 +343,30 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         </div>
       </div>
 
-      {/* MODAL MỜI ĐẠO HỮU */}
+      {/* MODAL MỜI ĐẠO HỮU - HIỂN THỊ TẤT CẢ NGƯỜI DÙNG ĐANG ONLINE TRÊN HỆ THỐNG */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>✉️ Danh sách Kỳ Thủ Online</h3>
+            <h3>✉️ Danh sách Đạo Hữu Online</h3>
             <div className="online-list">
               {Object.entries(activeUsers)
                 .filter(([u]) => u !== username)
                 .map(([u, userObj]) => {
                   const isMeditating = userObj?.currentScreen === 'TinhTamDien' || userObj?.status?.includes('tịnh tâm');
+                  const displayName = userObj?.fullName || u;
+                  const currentLoc = userObj?.currentScreen ? `(Đang ở: ${userObj.currentScreen})` : '(Online)';
                   return (
                     <div key={u} className="online-item">
-                      <span>{userObj.fullName || u} {isMeditating ? '🧘 (Đang Tịnh Tâm)' : ''}</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 'bold' }}>{displayName}</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{currentLoc} {isMeditating ? '🧘 (Tịnh Tâm)' : ''}</div>
+                      </div>
                       <button 
                         disabled={isMeditating}
                         onClick={() => handleInviteUser(u, userObj)}
                         className={`send-invite-btn ${isMeditating ? 'disabled' : ''}`}
                       >
-                        {isMeditating ? 'Không thể mời' : 'Thách đấu'}
+                        {isMeditating ? 'Bận' : 'Thách đấu'}
                       </button>
                     </div>
                   );
