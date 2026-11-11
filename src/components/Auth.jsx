@@ -55,7 +55,7 @@ export default function Auth({ onLoginSuccess }) {
     await set(onlineRef, initialPos);
     onDisconnect(onlineRef).remove();
 
-    localStorage.setItem('kps_current_user', JSON.stringify(user));
+    localStorage.setItem('kps_current_user', JSON.stringify(userData));
     // Truyền dữ liệu user lên component cha để hiển thị trang Tam Quan
     onLoginSuccess(userData);
   };
