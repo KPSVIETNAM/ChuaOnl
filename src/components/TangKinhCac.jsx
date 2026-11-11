@@ -23,13 +23,31 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   const chatScrollRef = useRef(null);
 
   // [BẠN CÓ THỂ THAY ĐỔI LINK SÁCH Ở ĐÂY]
-  const bookLinks = [
-    { title: '📖 Kinh Vu Lan Báo Hiếu', url: '/books/VuLanBaohieu.txt' },
-    { title: '📖 Kinh Phổ Môn', url: '#' },
-    { title: '📖 Kinh Kim Cương', url: '#' },
-    { title: '📖 Sổ tay Tịnh tâm hành trì', url: '#' },
+ const bookLinks = [
+    { id: 'vulan', title: '📖 Kinh Vu Lan Báo Hiếu' },
+    { id: 'phomon', title: '📖 Kinh Phổ Môn' },
+    { id: 'kimcuong', title: '📖 Kinh Kim Cương' },
+    { id: 'sotay', title: '📖 Sổ tay Tịnh tâm hành trì' },
   ];
+// Khai báo state để lưu quyển sách đang được mở (mặc định là null hoặc 'vulan')
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  <div className="book-list">
+    {bookLinks.map((book) => (
+      <button 
+        key={book.id} 
+        type="button" 
+        className="book-item"
+        onClick={() => setSelectedBookId(book.id)}
+      >
+        {book.title}
+      </button>
+    ))}
+  </div>
 
+  {/* Hiển thị nội dung quyển sách được chọn */}
+  {selectedBookId === 'vulan' && <VuLanBaohieu />}
+  // {selectedBookId === 'phomon' && <PhoMon />}
+  {/* Các sách khác tương tự */}
   // Lắng nghe tổng số lượt đọc kinh toàn hệ thống
   useEffect(() => {
     const kinhRef = ref(db, 'global_stats/totalTangKinhToanCty');
