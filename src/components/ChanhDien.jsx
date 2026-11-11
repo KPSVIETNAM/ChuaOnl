@@ -234,8 +234,10 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
             );
           })}
 
-          {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>}
-          <div className="scene-online">● {Object.keys(activeUsers).length} người đang hiện diện</div>
+          {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>} 
+          <div className="scene-online">
+          ● {Object.values(activeUsers).filter(u => u.currentScreen === 'chanhdien').length} người đang hiện diện
+        </div>
         </section>
 
         <section className="action-section" aria-label="Các hoạt động tại chánh điện">
@@ -476,7 +478,16 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
         .chat-heading p { margin:2px 0 0; color:var(--muted); font-size:10px; }
         .chat-live { display:flex; align-items:center; gap:4px; color:#9ed6ae; font-size:9px; white-space:nowrap; }
         .chat-live i { width:6px; height:6px; background:#62c783; border-radius:50%; }
-        .chat-messages { height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:10px 2px; scroll-behavior:smooth; }
+        .chat-messages { 
+  height: 200px; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px; 
+  padding: 10px 2px; 
+  scroll-behavior: smooth; 
+  font-size: 10px;  
+}
         .chat-message { max-width:85%; align-self:flex-start; }
         .chat-message.my-message { align-self:flex-end; }
         .message-meta { display:flex; align-items:center; gap:6px; margin:0 3px 3px; }

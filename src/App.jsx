@@ -7,6 +7,7 @@ import ChanhDien from './components/ChanhDien';
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
+import { ref, onValue, remove, update } from 'firebase/database';
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('auth'); // 'auth', 'tamquan', 'chanhdien', 'TinhTamDien', 'TangKinhCac'
@@ -34,6 +35,19 @@ export default function App() {
 
     return () => unsubscribe();
   }, [currentUser]);
+// 2. TỰ ĐỘNG ĐỒNG BỘ VỊ TRÍ MÀN HÌNH LÊN FIREBASE (Thêm mới)
+useEffect(() => {
+  if (!currentUser?.username) return;
+
+  const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
+  
+  // Cập nhật màn hình hiện tại của user
+  update(userOnlineRef, {
+    currentScreen: currentScreen,
+    lastActive: Date.now()
+  }).catch(() => {}); 
+}, [currentScreen, currentUser]);
+
 
   // Hàm chấp nhận lời mời Caro
   const handleAcceptInvite = async () => {

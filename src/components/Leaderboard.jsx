@@ -17,16 +17,13 @@ export default function Leaderboard({ allUsers, logs }) {
         </div>
       </div>
 
-      <div style={{ ...styles.section, marginTop: '15px' }}>
-        <h3>📜 NHẬT KÝ CHÁNH ĐIỆN</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+      <div style={{ ...styles.section, marginTop: '15px' }}> 
           {logs.map((log, index) => (
             <div key={index} style={styles.logItem}>
               <span style={{ color: '#64748b', fontSize: '10px' }}>[{log.time}]</span> {log.text}
             </div>
           ))}
-        </div>
-      </div>
+        </div> 
     </div>
   );
 }
