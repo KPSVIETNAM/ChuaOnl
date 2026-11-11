@@ -78,8 +78,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
             await update(ref(db, `caro_lobby/${opponent.username}`), { status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId });
 
             setMyStatus('dang_dau');
-            setRoomId(newRoomId);
-            if (setNotice) setNotice(`🎉 Đã tìm thấy đối thủ ${opponent.fullName}! Hãy bấm Sẵn Sàng để bắt đầu.`);
+            setRoomId(newRoomId); 
           }
         }
       }
@@ -148,8 +147,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
   const handleCancelMatch = async () => {
     setMyStatus('dang_doi');
-    await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
-    if (setNotice) setNotice('Đã hủy tìm trận.');
+    await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null }); 
   };
 
   // Nút Sẵn Sàng / Hủy Sẵn Sàng trong phòng
@@ -199,7 +197,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
       timestamp: Date.now()
     });
 
-    if (setNotice) setNotice(`Đã gửi lời mời thách đấu tới ${targetUserObj.fullName || targetUsername}!`);
+    // if (setNotice) setNotice(`Đã gửi lời mời thách đấu tới ${targetUserObj.fullName || targetUsername}!`);
     setShowInviteModal(false);
   };
 
@@ -297,8 +295,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     } else {
       await update(ref(db, `caro_rooms/${roomId}`), {
         players: updatedPlayers
-      });
-      if (setNotice) setNotice('Đã gửi yêu cầu chơi lại. Đang chờ đối phương xác nhận...');
+      }); 
     }
   };
 
