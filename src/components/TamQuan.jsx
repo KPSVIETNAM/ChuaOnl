@@ -67,6 +67,21 @@ export default function TamQuan({ currentUser, onNavigate }) {
     </div>
   );
 }
+{/* Thêm ô Lối vào Caro trong gatesContainer của TamQuan.jsx */}
+<div 
+  style={{
+    ...styles.gateItem,
+    transform: hoveredGate === 'CoCaro' ? 'translateY(-6px) scale(1.05)' : 'translateY(0) scale(1)',
+    opacity: hoveredGate === 'CoCaro' ? 1 : 0.35,
+  }}
+  onMouseEnter={() => setHoveredGate('CoCaro')}
+  onMouseLeave={() => setHoveredGate(null)}
+  onClick={() => onNavigate('CoCaro')}
+>
+  <span style={styles.gateIcon}>⚔️</span>
+  <h3 style={styles.gateTitle}>Kỳ Viện Caro</h3>
+  <p style={styles.gateDesc}>Giao lưu cờ caro, đọ sức trí tuệ cùng đạo hữu.</p>
+</div>
 
 const styles = {
   container: {
