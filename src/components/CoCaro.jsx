@@ -567,7 +567,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
                 Object.entries(activeUsers)
                   .filter(([u]) => u !== username)
                   .map(([u, userObj]) => {
-                    const isMeditating = userObj?.currentScreen === 'TinhTamDien' || userObj?.status?.includes('tịnh tâm');
+                    const isMeditating = userObj?.currentScreen === 'TinhTamDien' ;
                     const displayName = userObj?.fullName || u;
                     const currentLoc = userObj?.currentScreen ? `(Đang ở: ${userObj.currentScreen})` : '(Online)';
                     return (
