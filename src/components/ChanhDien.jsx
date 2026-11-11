@@ -10,11 +10,13 @@ import {
   remove,
   onDisconnect,
 } from 'firebase/database';
+import { ChuongEffect } from './rituals/ChuongEffect';
 import Leaderboard from './Leaderboard';
 import DangHuong from './rituals/DangHuong';
 import DangHoa from './rituals/DangHoa';
 import DenHoaSen from './rituals/DenHoaSen';
 import ThinhChuong from './rituals/ThinhChuong';
+
 
 export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onBackToTamQuan, onLogout }) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -236,7 +238,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
           </div>
         );
     })}
-
+        <ChuongEffect /> {/*HIỆU ỨNG CHUÔNG  CHO TẤT CẢ MỌI NGƯỜI */}
           {isAnimating && <div className="incense-glow" aria-hidden="true">〰</div>} 
           <div className="scene-online">
           ● {Object.values(activeUsers).filter(u => u.currentScreen === 'chanhdien').length} người đang hiện diện

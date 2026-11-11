@@ -349,8 +349,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
           🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ thắng: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={onBack} className="cancel-match-btn" style={{ background: '#334155' }}>← Quay lại</button>
+        <div style={{ display: 'flex', gap: '10px' }}> 
           {myStatus === 'dang_tim_ghep' ? (
             <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
           ) : (
