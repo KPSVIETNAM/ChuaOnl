@@ -7,7 +7,8 @@ import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
 
-import { ref, onValue, remove, update } from 'firebase/database';
+import { ref, onValue, remove, update, get, set } from 'firebase/database';
+
 export default function App() {
   // Khởi tạo currentUser an toàn từ localStorage (có try...catch chống đơ)
   const [currentUser, setCurrentUser] = useState(() => {
@@ -20,7 +21,8 @@ export default function App() {
       return null;
     }
   }); 
-// Tự động chuyển sang 'tamquan' nếu đã có currentUser nhưng màn hình vẫn là 'auth'
+
+  // Tự động chuyển sang 'tamquan' nếu đã có currentUser nhưng màn hình vẫn là 'auth'
   const [currentScreen, setCurrentScreen] = useState(() => {
     const savedUser = localStorage.getItem('kps_current_user');
     return savedUser ? 'tamquan' : 'auth';
@@ -32,30 +34,63 @@ export default function App() {
   const [allUsers, setAllUsers] = useState({});
   const [logs, setLogs] = useState([]); 
 
-// State & Lắng nghe lời mời Cờ Caro riêng cho tài khoản
+  // State & Lắng nghe lời mời Cờ Caro riêng cho tài khoản
   const [caroInvite, setCaroInvite] = useState(null);
 
- // Tự động đồng bộ vị trí màn hình hiện tại lên Firebase Realtime Database
-useEffect(() => {
-  if (!currentUser?.username) return;
-
-  const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
+  // Tự động đồng bộ vị trí màn hình hiện tại lên Firebase Realtime Database
+  useEffect(() => {
+    if (!currentUser?.username) return;
+    const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
 
   // Cập nhật đè trường currentScreen và thời gian hoạt động mới nhất
-  update(userOnlineRef, {
-    username: currentUser.username,
-    fullName: currentUser.fullName || currentUser.username,
-    gender: currentUser.gender || 'khac',
-    currentScreen: currentScreen,
-    lastActive: Date.now()
-  }).catch((err) => console.error("Lỗi cập nhật vị trí:", err));
+    update(userOnlineRef, {
+      username: currentUser.username,
+      fullName: currentUser.fullName || currentUser.username,
+      gender: currentUser.gender || 'khac',
+      currentScreen: currentScreen,
+      lastActive: Date.now()
+    }).catch((err) => console.error("Lỗi cập nhật vị trí:", err));
+  }, [currentScreen, currentUser]);
 
-}, [currentScreen, currentUser]);
+  // Lắng nghe lời mời Cờ Caro đến tài khoản của mình
+  useEffect(() => {
+    if (!currentUser?.username) return;
+    const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
+    return onValue(inviteRef, (snapshot) => {
+      setCaroInvite(snapshot.val());
+    });
+  }, [currentUser]);
 
-  // Hàm chấp nhận lời mời Caro
+  // Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI TỰ ĐỘNG THÊM VÀO PHÒNG CHO NGƯỜI NHẬN MỜI)
   const handleAcceptInvite = async () => {
     if (!caroInvite) return;
     const roomToJoin = caroInvite.roomId || 'phong_chung';
+    
+    try {
+      // Kiểm tra phòng tồn tại và tự động join vào phòng với quân 'O'
+      const roomRef = ref(db, `caro_rooms/${roomToJoin}`);
+      const roomSnap = await get(roomRef);
+      if (roomSnap.exists()) {
+        const roomData = roomSnap.val();
+        const players = roomData.players || {};
+        
+        // Nếu mình chưa có trong phòng thì add vào
+        if (!players[currentUser.username]) {
+          await update(ref(db, `caro_rooms/${roomToJoin}/players`), {
+            [currentUser.username]: {
+              fullName: currentUser.fullName || currentUser.username,
+              ready: true,
+              symbol: 'O'
+            }
+          });
+          // Đồng thời set trạng thái phòng thành playing nếu đủ 2 người
+          await update(roomRef, { status: 'playing' });
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi tham gia phòng cờ:", err);
+    }
+
     await remove(ref(db, `caro_invites/${currentUser.username}`));
     setCaroInvite(null);
     setCurrentScreen(`CoCaro_${roomToJoin}`);
@@ -68,7 +103,6 @@ useEffect(() => {
     setCaroInvite(null);
   };
 
-  
   // Lắng nghe người đang online
   useEffect(() => {
     const onlineRef = ref(db, 'online_users');
@@ -93,12 +127,10 @@ useEffect(() => {
       const logList = Object.values(data).slice(-30); // Lấy 30 log gần nhất
       setLogs(logList);
     }); 
-
-    return () => {
-      unsubscribeLogs();
-    };
+    return () => unsubscribeLogs();
   }, []);
-// Hàm xử lý đăng xuất / thoát tài khoản
+
+  // Hàm xử lý đăng xuất / thoát tài khoản
   const handleLogout = async () => {
     if (currentUser?.username) {
       try {
@@ -122,7 +154,7 @@ useEffect(() => {
       console.error("Lỗi lưu localStorage:", e);
     }
     setCurrentUser(user);
-    setCurrentScreen('tamquan'); // Chuyển ngay sang cổng Tam Quan
+    setCurrentScreen('tamquan');
   };
 
   if (!currentUser || currentScreen === 'auth') {
@@ -139,7 +171,7 @@ useEffect(() => {
     0
   );
 
-  // Thanh điều hướng dùng chung cho cả Chánh Điện, Tịnh Tâm Điện và Tàng Kinh Các
+  // Thanh điều hướng dùng chung
   const renderHeader = () => (
     <div style={{
       display: 'flex',
@@ -173,42 +205,38 @@ useEffect(() => {
         onClick={handleLogout} 
         style={{ padding: '6px 12px', background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
       >
-        🚪 Thoát tK <b >{currentUser?.fullName}</b>
+        🚪 Thoát tK <b>{currentUser?.fullName}</b>
       </button>
     </div>
   );
 
-  // Popup hiển thị lời mời Caro (Dùng chung cho các màn hình bên trong)
-    const renderCaroInvitePopup = () => (
-      caroInvite && (
-        <div style={{
-          position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
-          backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
-          borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
-        }}>
-          <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>⚔️ Thách đấu Cờ Caro!</h4>
-          <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
-            <b>{caroInvite.fromFullName}</b> mời đạo hữu vào chơi cờ!
-          </p>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handleAcceptInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
-            <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
-          </div>
+  // Popup hiển thị lời mời Caro
+  const renderCaroInvitePopup = () => (
+    caroInvite && (
+      <div style={{
+        position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
+        backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
+        borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+      }}>
+        <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>⚔️ Thách đấu Cờ Caro!</h4>
+        <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
+          <b>{caroInvite.fromFullName}</b> mời đạo hữu vào chơi cờ!
+        </p>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleAcceptInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
+          <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
         </div>
-      )
-    );
+      </div>
+    )
+  );
+
   // 1. Màn hình Chánh Điện
   if (currentScreen === 'chanhdien') {
     return (
-      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
-        <ChanhDien 
-          currentUser={currentUser} 
-          activeUsers={activeUsers} 
-          allUsers={allUsers} 
-          logs={logs} 
-        />
-        {renderCaroInvitePopup()} {/* Thêm popup caro   */}
+        <ChanhDien currentUser={currentUser} activeUsers={activeUsers} allUsers={allUsers} logs={logs} />
+        {renderCaroInvitePopup()}
       </div>
     );
   }
@@ -216,12 +244,10 @@ useEffect(() => {
   // 2. Màn hình Tịnh Tâm Điện
   if (currentScreen === 'TinhTamDien') {
     return (
-      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
-        <TinhTamDien 
-          currentUser={currentUser} 
-          onBack={() => setCurrentScreen('tamquan')} 
-        />
+        <TinhTamDien currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
+        {renderCaroInvitePopup()}
       </div>
     );
   }
@@ -229,30 +255,15 @@ useEffect(() => {
   // 3. Màn hình Tàng Kinh Các
   if (currentScreen === 'TangKinhCac') {
     return (
-      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
-        <TangKinhCac 
-          currentUser={currentUser} 
-          onBack={() => setCurrentScreen('tamquan')} 
-        />
+        <TangKinhCac currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
+        {renderCaroInvitePopup()}
       </div>
     );
   }
-  // 4. Màn hình Cờ Caro  
-  if (currentScreen.startsWith('CoCaro')) {
-    const roomId = currentScreen.split('_')[1];
-    return (
-      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box' }}>
-        {renderHeader()}
-        <CoCaro 
-          currentUser={currentUser}
-          roomId={roomId}
-          onBack={() => setCurrentScreen('tamquan')}
-        />
-      </div>
-    );
-  }
- // 5. Màn hình Cờ Caro 
+
+  // 4. Màn hình Cờ Caro (Gộp chung tất cả các trường hợp bắt đầu bằng CoCaro)
   if (currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_')) {
     const roomId = currentScreen.includes('_') ? currentScreen.split('_')[1] : 'phong_chung';
     return (
@@ -269,15 +280,6 @@ useEffect(() => {
       </div>
     );
   }
-  // Lắng nghe lời mời Cờ Caro đến tài khoản của mình
-  useEffect(() => {
-    if (!currentUser?.username) return;
-    const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
-    return onValue(inviteRef, (snapshot) => {
-      setCaroInvite(snapshot.val());
-    });
-  }, [currentUser]);
- 
+
   return null;
 }
- 
