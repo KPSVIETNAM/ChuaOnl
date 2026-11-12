@@ -184,7 +184,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const handleLeaveRoom = async () => {
     if (roomId && roomId !== 'phong_chung') {
       const updatedPlayers = { ...(roomData.players || {}) };
-      updatedPlayers[username] = null;
+      delete updatedPlayers[username]; // Hoặc gán updatedPlayers[username] = null;
       const roomRef = ref(db, `caro_rooms/${roomId}`);
       if (roomData && roomData.status === 'playing') {
         await update(roomRef, {
