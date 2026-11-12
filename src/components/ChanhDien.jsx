@@ -167,6 +167,45 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     });
   };
 
+  // 📖 HÀM ĐỌC KINH TỨC THÌ (KHÔNG CẦN CHỜ ĐỢI HÀNG ĐỢI)
+  const handleDocKinh = async () => {
+    if (!username) return;
+
+    const userOnlineRef = ref(db, `online_users/${username}`);
+
+    // Cập nhật trạng thái đang đọc kinh hiển thị ngay lập tức lên đầu nhân vật
+    await update(userOnlineRef, {
+      isIncensing: true,
+      status: `Đang đọc kinh: “${loiNguyetInput || 'Khai mở trí huệ'}” 📖`,
+    });
+
+    // Phát âm thanh gõ mõ / tụng kinh nhẹ
+    const audio = new Audio('/audio/mo.mp3');
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+
+    // Cộng điểm công đức cá nhân và toàn công ty
+    runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 2);
+    runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 2);
+    runTransaction(ref(db, 'global_stats/totalTangKinhToanCty'), (count) => (count || 0) + 1);
+
+    // Ghi log nhật ký hoạt động
+    push(ref(db, 'logs'), {
+      text: `${fullName} đang tụng đọc kinh điển: “${loiNguyetInput || 'Khai mở trí huệ'}” 📖`,
+      time: new Date().toLocaleTimeString(),
+    });
+
+    setNotice('Đang tụng kinh tịnh tâm...');
+
+    // Sau 8 giây tự động đưa trạng thái về tịnh tâm bình thường
+    setTimeout(async () => {
+      await update(userOnlineRef, {
+        isIncensing: false,
+        status: 'Đang tịnh tâm 🙏',
+      });
+    }, 8000);
+  };
+
   const handleEmergencyReset = async () => {
     await remove(ref(db, 'global_state/currentIncenser'));
     await remove(ref(db, 'incense_queue'));
@@ -253,7 +292,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
           </div>
 
           <div className="action-grid">
-            {/* CÁC HOẠT ĐỘNG ĐÃ TÁCH RIÊNG */}
+            {/* CÁC HOẠT ĐỘNG ĐÃ TÁCH RIÊng */}
             <DangHuong currentUser={currentUser} queueList={queueList} loiNguyetInput={loiNguyetInput} setNotice={setNotice} />
             
             <button type="button" className="action-item action-active" onClick={handleGoMo}>
@@ -265,9 +304,13 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
             
             <DenHoaSen currentUser={currentUser} queueList={queueList} loiNguyetInput={loiNguyetInput} setNotice={setNotice} />
             
-            {/* Chừa chỗ sẵn sàng cho các tính năng sắp tới */}
             <ThinhChuong currentUser={currentUser} queueList={queueList}  loiNguyetInput={loiNguyetInput} setNotice={setNotice} /> 
-            {/* <DocKinh currentUser={currentUser} queueList={queueList} setNotice={setNotice} /> */}
+
+            {/* 📖 NÚT ĐỌC KINH ĐỘC LẬP TỨC THÌ (THAY THẾ CODE CŨ) */}
+            <button type="button" className="action-item action-active" onClick={handleDocKinh}>
+              <span className="action-icon">📖</span>
+              <span className="action-label">Đọc kinh</span>
+            </button>
           </div>
 
           <div className="prayer-box"> 
@@ -484,15 +527,15 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
         .chat-live { display:flex; align-items:center; gap:4px; color:#9ed6ae; font-size:9px; white-space:nowrap; }
         .chat-live i { width:6px; height:6px; background:#62c783; border-radius:50%; }
         .chat-messages { 
-  height: 200px; 
-  overflow-y: auto; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-  padding: 10px 2px; 
-  scroll-behavior: smooth; 
-  font-size: 13px;  
-}
+          height: 200px; 
+          overflow-y: auto; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 8px; 
+          padding: 10px 2px; 
+          scroll-behavior: smooth; 
+          font-size: 13px;  
+        }
         .chat-message { max-width:85%; align-self:flex-start; }
         .chat-message.my-message { align-self:flex-end; }
         .message-meta { display:flex; align-items:center; gap:6px; margin:0 3px 3px; }
