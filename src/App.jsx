@@ -86,12 +86,14 @@ export default function App() {
       }
 
       // 3. Đưa người nhận vào phòng với quân 'O', set sẵn sàng (ready: true) và bật luôn trạng thái playing
+      
       const players = roomData.players || {};
+      setCurrentScreen(`CoCaro`);
       const updatedPlayers = {
         ...players,
         [currentUser.username]: {
           fullName: currentUser.fullName || currentUser.username,
-          ready: true,
+          ready: false,
           symbol: 'O',
           ruleRequest: false
         }
