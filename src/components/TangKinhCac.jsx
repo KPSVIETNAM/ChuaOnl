@@ -133,7 +133,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
       </div>
 
       <div className="tang-kinh-content">
-        <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC 📖</h2>
+        <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC v1 📖</h2>
         <p className="tang-kinh-subtitle">Kho tàng kinh điển Phật pháp, nơi tĩnh tâm đọc tụng và chiêm nghiệm</p>
 
         {/* NẾU ĐANG CHỌN SÁCH THÌ HIỂN THỊ NỘI DUNG SÁCH, CÒN KHÔNG THÌ HIỂN THỊ TRANG CHÍNH */}
