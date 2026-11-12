@@ -848,13 +848,20 @@ export default function VuLanBaohieu() {
       maxWidth: '800px', 
       margin: '0 auto',
       fontFamily: 'serif' 
-    }}>
-      <div>
+    }}><div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        gap: '10px', 
+        width: '100%', 
+        marginBottom: '3px',  /* Gom sát lại, giảm khoảng cách phía dưới */
+        padding: '0'          /* Bỏ khoảng đệm thừa */
+      }}>
         <button 
           onClick={handlePrev} 
           disabled={currentPage === 0}
           style={{
-            padding: '5px 10px',
+            padding: '2px 8px', /* Thu nhỏ kích thước nút cho gọn */
             backgroundColor: currentPage === 0 ? '#333' : '#8c6d36',
             color: currentPage === 0 ? '#666' : '#fff',
             border: 'none',
@@ -865,12 +872,21 @@ export default function VuLanBaohieu() {
         >
           &larr;
         </button> 
-         <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '2px' }}>Kinh Vu Lan Báo Hiếu</h2>
+
+        <h2 style={{ 
+          textAlign: 'center', 
+          color: '#e8bd70', 
+          margin: '0',        /* Xóa bỏ hoàn toàn margin mặc định của thẻ h2 */
+          fontSize: '16px'    /* Điều chỉnh cỡ chữ cho gọn gàng nếu cần */
+        }}>
+          Kinh Vu Lan Báo Hiếu
+        </h2>
+
         <button 
           onClick={handleNext} 
           disabled={currentPage === pages.length - 1}
           style={{
-            padding: '5px 10px',
+            padding: '2px 8px', /* Thu nhỏ kích thước nút cho gọn */
             backgroundColor: currentPage === pages.length - 1 ? '#333' : '#8c6d36',
             color: currentPage === pages.length - 1 ? '#666' : '#fff',
             border: 'none',
@@ -879,9 +895,9 @@ export default function VuLanBaohieu() {
             fontWeight: 'bold'
           }}
         >
-           &rarr;
+          &rarr;
         </button>
-         </div>
+      </div>
       <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '2px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
