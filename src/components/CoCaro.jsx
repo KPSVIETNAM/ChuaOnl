@@ -183,12 +183,15 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
 
   const handleLeaveRoom = async () => {
     if (roomId && roomId !== 'phong_chung') {
+      const updatedPlayers = { ...(roomData.players || {}) };
+      updatedPlayers[username] = null;
       const roomRef = ref(db, `caro_rooms/${roomId}`);
       if (roomData && roomData.status === 'playing') {
         await update(roomRef, {
           status: 'cancelled',
           winner: 'Hủy trận',
-          winReason: `${fullName} đã rời trận. Ván đấu kết thúc.`
+          winReason: `${fullName} đã rời trận. Ván đấu kết thúc.`,
+          players: updatedPlayers
         });
       }
     }
