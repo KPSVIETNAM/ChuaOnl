@@ -53,7 +53,7 @@ export default function VuLanBaohieu() {
     // Trang 3
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>2. Tán Phật và Đảnh Lễ Tam Bảo</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>2. Tán Phật và Đảnh Lễ Tam Bảo</h3>
         <p style={{ fontStyle: 'italic', marginBottom: '15px' }}>(Đại chúng đứng chắp tay, hướng về Phật, cùng tụng)</p>
         <p>
           Đấng Pháp Vương vô thượng,<br />
@@ -79,7 +79,7 @@ export default function VuLanBaohieu() {
     // Trang 4
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>2. Tán Phật (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>2. Tán Phật (Tiếp theo)</h3>
         <p>
           Pháp là phương thuốc diệu thay,<br />
           Chữa lành bệnh khổ bao loài chúng sinh,<br />
@@ -106,7 +106,7 @@ export default function VuLanBaohieu() {
     // Trang 5
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>3. Tán Hương</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>3. Tán Hương</h3>
         <p style={{ fontStyle: 'italic', marginBottom: '15px' }}>(Đại chúng ngồi thẳng lưng theo tư thế hoa sen. Duy-na và Duyệt chúng khai chuông mõ. Từ đây trở đi, chủ lễ xướng và đại chúng cùng tụng theo)</p>
         <p>
           Lò hương vừa bén chiên đàn<br />
@@ -122,7 +122,7 @@ export default function VuLanBaohieu() {
     // Trang 6
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>4. Phát Nguyện Trì Kinh &amp; 5. Tán Dương Giáo Pháp</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>4. Phát Nguyện Trì Kinh &amp; 5. Tán Dương Giáo Pháp</h3>
         <p>
           Lạy đấng Thầy ba cõi,<br />
           Quy mạng Phật mười phương.<br />
@@ -149,7 +149,7 @@ export default function VuLanBaohieu() {
     // Trang 7
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 1)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 1)</h3>
         <p>
           Ta từng nghe lời dạy như vầy:<br />
           Một thuở nọ Thế Tôn an trụ,<br />
@@ -176,7 +176,7 @@ export default function VuLanBaohieu() {
     // Trang 8
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 2)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 2)</h3>
         <p>
           Rằm tháng bảy là ngày Tự tứ,<br />
           Mười phương Tăng đều dự lễ này,<br />
@@ -200,7 +200,7 @@ export default function VuLanBaohieu() {
     // Trang 9
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 3)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 3)</h3>
         <p>
           Hoặc người đặng bốn tòa đạo quả,<br />
           Công tu hành nguyện thỏa vô sanh,<br />
@@ -224,7 +224,7 @@ export default function VuLanBaohieu() {
     // Trang 10
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 4)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 4)</h3>
         <p>
           Ba đường khổ chắc rằng ra khỏi,<br />
           Cảnh thanh nhàn hưởng thọ tự nhiên,<br />
@@ -248,7 +248,7 @@ export default function VuLanBaohieu() {
     // Trang 11
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 5)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 5)</h3>
         <p>
           Khi thọ dụng nên an vật thực,<br />
           Trước Phật đài hoặc tự tháp trung,<br />
@@ -272,7 +272,7 @@ export default function VuLanBaohieu() {
     // Trang 12
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 6)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 6)</h3>
         <p>
           Độ cha mẹ còn đang tại thế,<br />
           Hoặc bảy đời có thể đặng không?<br />
@@ -296,7 +296,7 @@ export default function VuLanBaohieu() {
     // Trang 13
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 7)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Phần 7)</h3>
         <p>
           Đặng cầu nguyện song đường trường thọ,<br />
           Chẳng ốm đau cũng chẳng khổ chi,<br />
@@ -320,7 +320,7 @@ export default function VuLanBaohieu() {
     // Trang 14
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Vu Lan Bồn (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Vu Lan Bồn (Hoàn mãn)</h3>
         <p>
           Đệ tử Phật lo âu gìn giữ,<br />
           Mới phải là Thích tử Thiền môn,<br />
@@ -337,7 +337,7 @@ export default function VuLanBaohieu() {
     // Trang 15
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 1)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 1)</h3>
         <p>
           Một thuở nọ Thế Tôn an trụ,<br />
           Xá-vệ thành Kỳ thụ viên trung,<br />
@@ -361,7 +361,7 @@ export default function VuLanBaohieu() {
     // Trang 16
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 2)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 2)</h3>
         <p>
           Ai ai cũng kính Thầy dường ấy<br />
           Cớ sao Thầy lại lạy xương khô?<br />
@@ -385,7 +385,7 @@ export default function VuLanBaohieu() {
     // Trang 17
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 3)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 3)</h3>
         <p>
           Ngươi chịu khó xét soi cho kỹ,<br />
           Phân làm hai bên nữ, bên nam,<br />
@@ -409,7 +409,7 @@ export default function VuLanBaohieu() {
     // Trang 18
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 4)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 4)</h3>
         <p>
           Ngươi có biết cớ sao đen nhẹ?<br />
           Bởi đàn bà sinh đẻ mà ra,<br />
@@ -433,7 +433,7 @@ export default function VuLanBaohieu() {
     // Trang 19
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 5)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Phần 5)</h3>
         <p>
           Tháng thứ nhì dường như sữa đặc,<br />
           Tháng thứ ba như cục huyết ngưng,<br />
@@ -457,7 +457,7 @@ export default function VuLanBaohieu() {
     // Trang 20
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Mười Điều Ân)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Mười Điều Ân)</h3>
         <p>
           Sinh được con muôn phần an lạc,<br />
           Cũng ví như được bạc được vàng,<br />
@@ -481,7 +481,7 @@ export default function VuLanBaohieu() {
     // Trang 21
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>Phật Nói Kinh Báo Hiếu Công Ơn Cha Mẹ (Tiếp theo)</h3>
         <p>
           <strong>Điều thứ bảy</strong> không chê ô uế,<br />
           Giặt đồ dơ của trẻ không phiền,<br />
@@ -501,7 +501,7 @@ export default function VuLanBaohieu() {
     // Trang 22
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>8. Kinh Tinh Hoa Trí Tuệ (Bát-nhã Tâm Kinh)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>8. Kinh Tinh Hoa Trí Tuệ (Bát-nhã Tâm Kinh)</h3>
         <p>
           Quán Tự Tại thực hành trí tuệ,<br />
           Bát-nhã ba-la-mật sáng ngời,<br />
@@ -521,7 +521,7 @@ export default function VuLanBaohieu() {
     // Trang 23
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>8. Kinh Tinh Hoa Trí Tuệ (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>8. Kinh Tinh Hoa Trí Tuệ (Tiếp theo)</h3>
         <p>
           Trong chân không chẳng hề có sắc.<br />
           Chẳng thọ, tưởng, hành, thức trong không.<br />
@@ -541,7 +541,7 @@ export default function VuLanBaohieu() {
     // Trang 24
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>8. Kinh Tinh Hoa Trí Tuệ (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>8. Kinh Tinh Hoa Trí Tuệ (Hoàn mãn)</h3>
         <p>
           Mọi chướng ngại quanh mình tan biến,<br />
           Mọi việc đều chẳng khiến hoảng kinh,<br />
@@ -566,7 +566,7 @@ export default function VuLanBaohieu() {
     // Trang 25
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>9. Niệm Phật</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>9. Niệm Phật</h3>
         <p>
           A-di-đà Phật sắc thân vàng,<br />
           Tướng tốt không gì thể sánh ngang.<br />
@@ -588,7 +588,7 @@ export default function VuLanBaohieu() {
     // Trang 26
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-A. Sám Mười Ân Đức Của Mẹ</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-A. Sám Mười Ân Đức Của Mẹ</h3>
         <p>
           (1). Nghiệp lực dẫn chúng sanh / Gá vào trong thai mẹ / Cưu mang chín tháng trời / Khổ đau không trách kể.<br />
           Hoài thai như mang đá / Thương con ngại gió mưa / Áo quần không sửa soạn / Son phấn chẳng còn ưa! O<br /><br />
@@ -602,7 +602,7 @@ export default function VuLanBaohieu() {
     // Trang 27
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-A. Sám Mười Ân Đức Của Mẹ (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-A. Sám Mười Ân Đức Của Mẹ (Tiếp theo)</h3>
         <p>
           (4). Tình mẹ thật sâu nặng, / Thương con nào nhạt phai. / Nhả ngọt không tiếc nuối, / Nuốt đắng nào chua cay.<br />
           Thương con càng sâu đậm, / Sầu bi tăng đêm ngày. / Miễn sao con no ấm, / Đói khát chẳng nguôi ngoai! O<br /><br />
@@ -616,7 +616,7 @@ export default function VuLanBaohieu() {
     // Trang 28
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-A. Sám Mười Ân Đức Của Mẹ (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-A. Sám Mười Ân Đức Của Mẹ (Hoàn mãn)</h3>
         <p>
           (7). Nào quản thân phận mình / Chỉ sợ con bệnh tật / Tắm rửa lo vóc hình / Để con luôn khỏe mạnh.<br />
           Sắm áo đẹp cho con / Cũ rách riêng mình chịu / Mỗi khi con ấm lòng / Lòng mẹ mới xoa dịu!<br /><br />
@@ -632,7 +632,7 @@ export default function VuLanBaohieu() {
     // Trang 29
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-B. Sám Vu-Lan</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-B. Sám Vu-Lan</h3>
         <p>
           Đệ tử chúng con / Vâng lời Phật dạy / Ngày rằm tháng bảy / Gặp hội Vu-lan,<br />
           Phạm vũ huy hoàng / Đốt hương đảnh lễ / Mười phương tam thế / Phật Pháp Thánh Hiền.<br />
@@ -647,7 +647,7 @@ export default function VuLanBaohieu() {
     // Trang 30
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-B. Sám Vu-Lan (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-B. Sám Vu-Lan (Tiếp theo)</h3>
         <p>
           Đệ tử ơn sâu chưa báo / Hỗ phận kém hèn / Giờ này quỳ trước đài sen.<br />
           Chí thành cung kính. / Đạo tràng thanh tịnh, / Tăng bảo trang nghiêm,<br />
@@ -664,7 +664,7 @@ export default function VuLanBaohieu() {
     // Trang 31
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-C. Sám Bốn Ơn</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-C. Sám Bốn Ơn</h3>
         <p>
           Kính lạy mười phương Phật / Xin chứng tấm lòng thành / Con nguyện tu hạnh hiếu / Đền ơn Phật, chúng sanh.<br />
           Công sanh thành dưỡng dục / Hơn núi cả, biển khơi / Con có mặt trên đời / Ơn cha mẹ trước hết. O<br />
@@ -677,7 +677,7 @@ export default function VuLanBaohieu() {
     // Trang 32
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-C. Sám Bốn Ơn (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-C. Sám Bốn Ơn (Tiếp theo)</h3>
         <p>
           Nguyện sống đời hiền thiện / Không thẹn với tổ tiên / Cả nhà cùng tu học / Niềm hạnh phúc vô biên!<br />
           Có thân thờ cha mẹ / Nên thân nhờ sư trưởng / Dạy lễ nghĩa cho ta / Mới thành người cao thượng. O<br />
@@ -690,7 +690,7 @@ export default function VuLanBaohieu() {
     // Trang 33
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-C. Sám Bốn Ơn (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-C. Sám Bốn Ơn (Hoàn mãn)</h3>
         <p>
           Ơn nhà nông cày cấy / Ơn người thợ dệt may / Ơn những ai xây đắp / Cuộc sống đẹp hôm nay.<br />
           Ơn đất nước thiêng liêng / Biển cả đến đất liền / Chung đúc nên nhân kiệt / Dòng giống của tổ tiên. O<br />
@@ -703,7 +703,7 @@ export default function VuLanBaohieu() {
     // Trang 34
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-D. Sám Tống Táng (Phần 1)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-D. Sám Tống Táng (Phần 1)</h3>
         <p>
           Cuộc hồng trần xoay vần quá ngán,<br />
           Kiếp phù sinh tụ tán mấy hồi,<br />
@@ -725,7 +725,7 @@ export default function VuLanBaohieu() {
     // Trang 35
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-D. Sám Tống Táng (Phần 2)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-D. Sám Tống Táng (Phần 2)</h3>
         <p>
           Khi nào trau ngọc chuốt vàng<br />
           Bây giờ một nắm xương tàn lạnh tanh. O<br />
@@ -745,7 +745,7 @@ export default function VuLanBaohieu() {
     // Trang 36
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-D. Sám Tống Táng (Phần 3)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-D. Sám Tống Táng (Phần 3)</h3>
         <p>
           Khi nào mẹ mẹ cha cha<br />
           Bây giờ bóng núi cách xa muôn trùng.<br />
@@ -765,7 +765,7 @@ export default function VuLanBaohieu() {
     // Trang 37
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-D. Sám Tống Táng (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-D. Sám Tống Táng (Hoàn mãn)</h3>
         <p>
           Phù du sớm tối một mai<br />
           Giàu sang cũng thác, sạt sài cũng vong.<br />
@@ -786,7 +786,7 @@ export default function VuLanBaohieu() {
     // Trang 38
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-E. Sám Niệm Phật</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-E. Sám Niệm Phật</h3>
         <p>
           Một lòng giữ niệm Di-đà, / Hồng danh sáu chữ thật là rất cao, / Năng trừ tám vạn trần lao, / Niệm thời phải tính cách nào cho hay.<br />
           Tham lam dứt bỏ mê si, / Tĩnh tâm niệm Phật việc gì cũng an. / Niệm Phật tội nghiệp tiêu tan, / Những điều tai họa khỏi mang vào mình.<br />
@@ -798,7 +798,7 @@ export default function VuLanBaohieu() {
     // Trang 39
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-E. Sám Niệm Phật (Hoàn mãn)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-E. Sám Niệm Phật (Hoàn mãn)</h3>
         <p>
           Niệm Phật ắt gặp phước duyên, / Tài danh chẳng nhiễm, bình an cửa nhà. / Niệm Phật chẳng sợ tà ma, / Những hàng yêu quái tránh xa chẳng cùng.<br />
           Niệm Phật được lợi ích chung, / Gặp loài ác thú hóa hung ra hiền. / Niệm Phật thân thể được yên, / Trong khi tĩnh tọa tham thiền tâm minh.<br />
@@ -810,7 +810,7 @@ export default function VuLanBaohieu() {
     // Trang 40
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>10-F. Sám Nhất Tâm &amp; 10-G. Sám Phát Nguyện</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>10-F. Sám Nhất Tâm &amp; 10-G. Sám Phát Nguyện</h3>
         <p>
           Một lòng mỏi mệt không nài, / Cầu về Cực Lạc ngồi đài liên hoa. / Cha lành vốn thiệt Di-đà, / Soi hào quang tịnh chói lòa thân con.<br />
           Nguyện làm nên đạo Bồ-đề, / Chuyên lòng niệm Phật, cầu về Tây phương. / Phật xưa lời thệ tỏ tường, / Bốn mươi tám nguyện dẫn đường chúng sanh. O<br /><br />
@@ -840,7 +840,7 @@ export default function VuLanBaohieu() {
 
   return (
     <div style={{ 
-      padding: '30px 20px', 
+      padding: '10px 5px', 
       color: '#f4ead8', 
       backgroundColor: '#1c1b18', 
       minHeight: '100vh',
@@ -852,7 +852,7 @@ export default function VuLanBaohieu() {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center', 
-        gap: '10px', 
+        gap: '5px', 
         width: '100%', 
         marginBottom: '3px',  /* Gom sát lại, giảm khoảng cách phía dưới */
         padding: '0'          /* Bỏ khoảng đệm thừa */
@@ -903,7 +903,7 @@ export default function VuLanBaohieu() {
       {/* Khung nội dung */}
       <div style={{ 
         background: '#262420', 
-        padding: '10px', 
+        padding: '5px', 
         borderRadius: '4px', 
         border: '1px solid #3d372c',
         boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
