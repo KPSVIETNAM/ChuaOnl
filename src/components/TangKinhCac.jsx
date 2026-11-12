@@ -129,8 +129,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`}>
           {isAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
         </button> 
-        <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC v1 📖</h2>
-        <p className="tang-kinh-subtitle">Kho tàng kinh điển Phật pháp, nơi tĩnh tâm đọc tụng và chiêm nghiệm</p>
+        <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC 📖</h2>
       </div>
 
       <div className="tang-kinh-content"> 

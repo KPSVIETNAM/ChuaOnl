@@ -5,9 +5,9 @@ export default function VuLanBaohieu() {
     // Trang 1
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>1. Phần Khởi Nguyện</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '3px' }}>1. Phần Khởi Nguyện</h3>
         <p><strong>Nam-mô Bản Sư Thích-ca Mâu-ni Phật</strong> (3 lần)...</p>
-        <p style={{ marginTop: '15px' }}>
+        <p style={{ marginTop: '10px' }}>
           <strong>1. NGUYỆN HƯƠNG</strong><br />
           <em>(Chủ lễ quỳ ngay thẳng, dâng ba nén hương lên ngang trán, thành tâm xướng nguyện. Đại chúng cùng quán tưởng theo lời Nguyện)</em>
         </p>
@@ -849,8 +849,8 @@ export default function VuLanBaohieu() {
       margin: '0 auto',
       fontFamily: 'serif' 
     }}>
-      <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '5px' }}>Kinh Vu Lan Báo Hiếu</h2>
-      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '25px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
+      <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '2px' }}>Kinh Vu Lan Báo Hiếu</h2>
+      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '15px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
       <div style={{ 
