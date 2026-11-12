@@ -7,7 +7,7 @@ export default function VuLanBaohieu() {
       <div>
         <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '3px' }}>1. Phần Khởi Nguyện</h3>
         <p><strong>Nam-mô Bản Sư Thích-ca Mâu-ni Phật</strong> (3 lần)...</p>
-        <p style={{ marginTop: '10px' }}>
+        <p style={{ marginTop: '2px' }}>
           <strong>1. NGUYỆN HƯƠNG</strong><br />
           <em>(Chủ lễ quỳ ngay thẳng, dâng ba nén hương lên ngang trán, thành tâm xướng nguyện. Đại chúng cùng quán tưởng theo lời Nguyện)</em>
         </p>
@@ -855,8 +855,8 @@ export default function VuLanBaohieu() {
       {/* Khung nội dung */}
       <div style={{ 
         background: '#262420', 
-        padding: '25px', 
-        borderRadius: '8px', 
+        padding: '10px', 
+        borderRadius: '4px', 
         border: '1px solid #3d372c',
         boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
         minHeight: '400px'
@@ -869,8 +869,8 @@ export default function VuLanBaohieu() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginTop: '25px',
-        padding: '0 10px'
+        marginTop: '20px',
+        padding: '0 5px'
       }}>
         <button 
           onClick={handlePrev} 
