@@ -128,12 +128,12 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
       <div className="tang-kinh-header-bar">  
         <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`}>
           {isAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
-        </button>
-      </div>
-
-      <div className="tang-kinh-content">
+        </button> 
         <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC v1 📖</h2>
         <p className="tang-kinh-subtitle">Kho tàng kinh điển Phật pháp, nơi tĩnh tâm đọc tụng và chiêm nghiệm</p>
+      </div>
+
+      <div className="tang-kinh-content"> 
 
         {/* NẾU ĐANG CHỌN SÁCH THÌ HIỂN THỊ NỘI DUNG SÁCH, CÒN KHÔNG THÌ HIỂN THỊ TRANG CHÍNH */}
         {selectedBookId ? (
@@ -284,12 +284,12 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
         .tang-kinh-title { color: #ffb703; margin: 0 0 5px 0; font-size: 22px; letter-spacing: 1px; }
-        .tang-kinh-subtitle { color: #b9ad9b; font-size: 13px; margin-bottom: 20px; }
+        .tang-kinh-subtitle { color: #b9ad9b; font-size: 12px; margin-bottom: 15px; }
         .tang-kinh-banner {
           width: 100%;
           border-radius: 10px;
           overflow: hidden;
-          margin-bottom: 20px;
+          margin-bottom: 15px;
           border: 1px solid rgba(232,189,112,.35);
           box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
         }
