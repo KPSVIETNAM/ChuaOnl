@@ -497,7 +497,7 @@ const handleLeaveRoom = async () => {
         {Object.keys(players).length === 2 && (
           <div className="rule-box">
             <div style={{ fontSize: '9px', color: '#cbd5e1', marginBottom: '2px' }}>
-              Chặn 2 đầu: <b style={{ color: blockRule ? '#ef4444' : '#10b981' }}>{blockRule ? 'BẬT' : 'TẮT'}</b>
+              Chặn 2 đầu Cần Cách 1 Ô ?: <b style={{ color: blockRule ? '#ef4444' : '#10b981' }}>{blockRule ? 'BẬT' : 'TẮT'}</b>
             </div>
             <button onClick={handleToggleRuleRequest} className={`rule-btn ${isMyRuleReq ? 'active' : ''}`}>
               {isMyRuleReq ? '✅ Đã đồng ý đổi' : '⚙️ Đổi luật (2 bên)'}

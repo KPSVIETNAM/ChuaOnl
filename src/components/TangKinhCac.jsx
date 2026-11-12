@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
-
+import VuLanBaohieu from './books/VulanBaohieu';
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
@@ -79,7 +79,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   useEffect(() => {
     audioRef.current = new Audio('/audio/amnen.mp3');
     audioRef.current.loop = true;
-    audioRef.current.volume = 0.2;
+    audioRef.current.volume = 0.3;
 
     if (isAudioPlaying) {
       audioRef.current.play().catch(() => {});
