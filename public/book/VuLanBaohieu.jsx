@@ -5,7 +5,7 @@ export default function VuLanBaohieu() {
     // Trang 1
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '3px' }}>1. Phần Khởi Nguyện</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '1px' }}>1. Phần Khởi Nguyện</h3>
         <p><strong>Nam-mô Bản Sư Thích-ca Mâu-ni Phật</strong> (3 lần)...</p>
         <p style={{ marginTop: '2px' }}>
           <strong>1. NGUYỆN HƯƠNG</strong><br />
@@ -849,7 +849,38 @@ export default function VuLanBaohieu() {
       margin: '0 auto',
       fontFamily: 'serif' 
     }}>
-      <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '2px' }}>Kinh Vu Lan Báo Hiếu</h2>
+     
+        <button 
+          onClick={handlePrev} 
+          disabled={currentPage === 0}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: currentPage === 0 ? '#333' : '#8c6d36',
+            color: currentPage === 0 ? '#666' : '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          &larr;
+        </button> 
+         <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '2px' }}>Kinh Vu Lan Báo Hiếu</h2>
+        <button 
+          onClick={handleNext} 
+          disabled={currentPage === pages.length - 1}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: currentPage === pages.length - 1 ? '#333' : '#8c6d36',
+            color: currentPage === pages.length - 1 ? '#666' : '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: currentPage === pages.length - 1 ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+           &rarr;
+        </button>
       <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '6px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
