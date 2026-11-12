@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
-import VuLanBaohieu from '../../public/books/VuLanBaohieu'; 
+import VuLanBaohieu from '../../books/VuLanBaohieu'; 
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
