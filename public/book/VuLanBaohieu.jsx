@@ -881,7 +881,7 @@ export default function VuLanBaohieu() {
         >
            &rarr;
         </button>
-      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '6px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
+      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '2px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
       <div style={{ 
