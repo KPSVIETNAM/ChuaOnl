@@ -434,7 +434,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const renderStatusLabel = (st) => {
     if (st === 'dang_tim_ghep') return <span style={{ color: '#38bdf8' }}>🔍 Đang tìm ghép đôi</span>;
     if (st === 'dang_dau') return <span style={{ color: '#ef4444' }}>⚔️ Đang đấu cờ</span>;
-    return <span style={{ color: '#10b981' }}>🟢 Đang đợi / Rảnh</span>;
+    return <span style={{ color: '#10b981' }}>🟢 Online</span>;
   };
 
   return (
