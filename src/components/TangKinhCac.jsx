@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
 import VuLanBaohieu from '../../public/book/VuLanBaohieu'; 
+
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
@@ -126,10 +127,23 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   return (
     <div className="tang-kinh-container">
       <div className="tang-kinh-header-bar">  
-        <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`}>
+        {/* Placeholder trống bên trái để giữ title nằm đúng chính giữa */}
+        <div style={{ width: '120px' }}></div>
+
+        {/* Chữ Tàng Kinh Các ở giữa, bấm vào sẽ tự trở về trang chính (setSelectedBookId(null)) */}
+        <h2 
+          className="tang-kinh-title" 
+          onClick={() => setSelectedBookId(null)}
+          style={{ cursor: 'pointer', margin: 0, textAlign: 'center', flex: 1 }}
+          title="Trở về trang chính Tàng Kinh Các"
+        >
+          📖 TÀNG KINH CÁC 📖
+        </h2> 
+
+        {/* Nút nhạc nền chuyển sang bên phải */}
+        <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`} style={{ width: '120px' }}>
           {isAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
         </button> 
-        <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC 📖</h2>
       </div>
 
       <div className="tang-kinh-content"> 
@@ -266,6 +280,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
           font-weight: bold;
           font-size: 12px;
           transition: all 0.2s;
+          white-space: nowrap;
         }
         .audio-toggle-btn.active { background: #065f46; color: #a7f3d0; border-color: #047857; }
         .audio-toggle-btn.muted { background: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
@@ -282,7 +297,8 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
           border: 1px solid #34394a;
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
-        .tang-kinh-title { color: #ffb703; margin: 0 0 5px 0; font-size: 22px; letter-spacing: 1px; }
+        .tang-kinh-title { color: #ffb703; margin: 0 0 5px 0; font-size: 22px; letter-spacing: 1px; transition: opacity 0.2s; }
+        .tang-kinh-title:hover { opacity: 0.8; }
         .tang-kinh-subtitle { color: #b9ad9b; font-size: 12px; margin-bottom: 15px; }
         .tang-kinh-banner {
           width: 100%;
@@ -455,40 +471,6 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         }
       `}</style>
     </div>
-  );
-}
-
-// Hàm thực thi khi đến lượt đọc kinh trên chánh điện
-TangKinhCac.executeRitual = async (username, fullName, loiNguyen, onComplete) => {
-  const currentIncenseRef = ref(db, 'global_state/currentIncenser');
-  onDisconnect(currentIncenseRef).remove();
-  const userOnlineRef = ref(db, `online_users/${username}`);
-
-  await update(userOnlineRef, {
-    isIncensing: true,
-    x: 50,
-    status: `Đang đọc kinh: “${loiNguyen || 'Khai mở trí huệ'}” 📖`,
-  });
-
-  push(ref(db, 'logs'), {
-    text: `${fullName} đang đọc tụng kinh điển: “${loiNguyen || 'Khai mở trí huệ'}” 📖`,
-    time: new Date().toLocaleTimeString(),
-  });
-
-  runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 1);
-  runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 1);
-  runTransaction(ref(db, 'global_stats/totalTangKinhToanCty'), (count) => (count || 0) + 1);
-
-  setTimeout(async () => {
-    const randomX = Math.floor(Math.random() * 70) + 15;
-    await update(userOnlineRef, {
-      isIncensing: false,
-      x: randomX,
-      status: 'Đang tịnh tâm 🙏',
-    });
-
-    await remove(currentIncenseRef);
-    onDisconnect(currentIncenseRef).cancel();
-    if (onComplete) onComplete();
-  }, 6000);
+  ); 
+ 
 };
