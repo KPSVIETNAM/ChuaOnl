@@ -180,11 +180,11 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setMyStatus('dang_doi');
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null }); 
   };
-const handleLeaveRoom = async () => {
+
+  const handleLeaveRoom = async () => {
     if (roomId && roomId !== 'phong_chung') {
       const roomRef = ref(db, `caro_rooms/${roomId}`);
-      
-      if (roomData) {
+     if (roomData) {
         // Tạo bản sao danh sách players và xóa bản thân khỏi phòng
         // const updatedPlayers = { ...(roomData.players || {}) };
         // delete updatedPlayers[username];
@@ -207,8 +207,6 @@ const handleLeaveRoom = async () => {
         }
       }
     }
-
-    // Reset trạng thái cá nhân về sảnh chờ
     setMyStatus('dang_doi');
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
     setRoomId('phong_chung');
@@ -480,7 +478,18 @@ const handleLeaveRoom = async () => {
         </div>
       </div>
 
-    
+      <div className="lobby-status-panel">
+        <h4 style={{ margin: '0 0 6px 0', color: '#f7dfad', fontSize: '11px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
+        <div className="lobby-players-grid">
+          {Object.entries(allLobbyPlayers)
+          .filter(([u]) => u !== username)
+          .map(([u, p]) => (
+            <div key={u} className="lobby-player-pill">
+              <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="caro-status-bar">
         <div className="players-info">
@@ -498,7 +507,7 @@ const handleLeaveRoom = async () => {
         {Object.keys(players).length === 2 && (
           <div className="rule-box">
             <div style={{ fontSize: '9px', color: '#cbd5e1', marginBottom: '2px' }}>
-              Chặn 2 đầu cần cách 1 ô ?: <b style={{ color: blockRule ? '#ef4444' : '#10b981' }}>{blockRule ? 'BẬT' : 'TẮT'}</b>
+              Chặn 2 đầu: <b style={{ color: blockRule ? '#ef4444' : '#10b981' }}>{blockRule ? 'BẬT' : 'TẮT'}</b>
             </div>
             <button onClick={handleToggleRuleRequest} className={`rule-btn ${isMyRuleReq ? 'active' : ''}`}>
               {isMyRuleReq ? '✅ Đã đồng ý đổi' : '⚙️ Đổi luật (2 bên)'}
@@ -561,18 +570,7 @@ const handleLeaveRoom = async () => {
           username={username}
         />
       </div>
-         <div className="lobby-status-panel">
-        <h4 style={{ margin: '0 0 6px 0', color: '#f7dfad', fontSize: '11px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
-        <div className="lobby-players-grid">
-          {Object.entries(allLobbyPlayers)
-          .filter(([u]) => u !== username)
-          .map(([u, p]) => (
-            <div key={u} className="lobby-player-pill">
-              <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
-            </div>
-          ))}
-        </div>
-      </div>
+
       {showInviteModal && (
         <CaroInviteModal 
           activeUsers={activeUsers}
