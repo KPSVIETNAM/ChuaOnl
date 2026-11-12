@@ -7,7 +7,7 @@ import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
 
-import { ref, onValue, remove, update, get, set } from 'firebase/database';
+import { ref, onValue, remove, update, get } from 'firebase/database';
 
 export default function App() {
   // Khởi tạo currentUser an toàn từ localStorage (có try...catch chống đơ)
@@ -28,7 +28,6 @@ export default function App() {
     return savedUser ? 'tamquan' : 'auth';
   });
 
-
   // Dữ liệu realtime từ Firebase
   const [activeUsers, setActiveUsers] = useState({});
   const [allUsers, setAllUsers] = useState({});
@@ -42,7 +41,6 @@ export default function App() {
     if (!currentUser?.username) return;
     const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
 
-  // Cập nhật đè trường currentScreen và thời gian hoạt động mới nhất
     update(userOnlineRef, {
       username: currentUser.username,
       fullName: currentUser.fullName || currentUser.username,
@@ -59,8 +57,9 @@ export default function App() {
     return onValue(inviteRef, (snapshot) => {
       setCaroInvite(snapshot.val());
     });
-  }, [currentUser]);// Hàm chấp nhận lời mời Caro (ĐÃ VÁ LỖI ĐỒNG BỘ PHÒNG ĐẤU CHO NGƯỜI NHẬN)
- // Hàm chấp nhận lời mời Caro (Đã tinh chỉnh lại để đồng bộ chuẩn xác trạng thái vào trận)
+  }, [currentUser]);
+
+  // Hàm chấp nhận lời mời Caro (Đã tinh chỉnh lại để đồng bộ chuẩn xác trạng thái vào trận)
   const handleAcceptInvite = async () => {
     if (!caroInvite) return;
     const roomToJoin = caroInvite.roomId;
@@ -71,7 +70,6 @@ export default function App() {
       const inviterOnlineSnap = await get(ref(db, `online_users/${inviterUsername}`));
       const inviterData = inviterOnlineSnap.exists() ? inviterOnlineSnap.val() : null;
 
-      // Kiểm tra xem người mời còn ở trang Caro hay không
       const inviterScreen = inviterData?.currentScreen || '';
       const isInviterInCaro = inviterScreen === 'caro' || inviterScreen.startsWith('CoCaro');
 
@@ -80,7 +78,6 @@ export default function App() {
       const roomSnap = await get(roomRef);
       const roomData = roomSnap.exists() ? roomSnap.val() : null;
 
-      // Điều kiện hủy lời mời: Người mời rời trang Caro HOẶC phòng đã chuyển sang 'playing' / 'cancelled' / không tồn tại
       if (!isInviterInCaro || !roomData || roomData.status !== 'waiting') {
         alert("⚠️ Lời mời đã hết hạn hoặc người mời không còn ở phòng chờ!");
         await remove(ref(db, `caro_invites/${currentUser.username}`));
@@ -103,26 +100,22 @@ export default function App() {
       const playerKeys = Object.keys(updatedPlayers);
       const firstPlayerKey = playerKeys[0] || inviterUsername;
 
-      // Cập nhật phòng chơi thành 'playing' và chỉ định lượt đi rõ ràng
       await update(roomRef, {
         players: updatedPlayers,
         status: 'playing',
         turn: firstPlayerKey 
       });
 
-      // Cập nhật trạng thái sảnh của người nhận
       await update(ref(db, `caro_lobby/${currentUser.username}`), {
         status: 'dang_dau',
         roomId: roomToJoin,
         matchedRoomId: roomToJoin
       });
 
-      // Cập nhật vị trí màn hình hiện tại của người nhận thành phòng Caro cụ thể
       await update(ref(db, `online_users/${currentUser.username}`), {
         currentScreen: `CoCaro_${roomToJoin}`
       });
 
-      // Xóa lời mời sau khi chấp nhận thành công
       await remove(ref(db, `caro_invites/${currentUser.username}`));
       setCaroInvite(null);
 
@@ -134,6 +127,7 @@ export default function App() {
       alert("Cơ sở dữ liệu bận, vui lòng thử lại!");
     }
   };
+
   // Hàm từ chối lời mời Caro
   const handleDeclineInvite = async () => {
     if (!caroInvite) return;
@@ -162,7 +156,7 @@ export default function App() {
     const logsRef = ref(db, 'logs');
     const unsubscribeLogs = onValue(logsRef, (snapshot) => {
       const data = snapshot.val() || {};
-      const logList = Object.values(data).slice(-30); // Lấy 30 log gần nhất
+      const logList = Object.values(data).slice(-30);
       setLogs(logList);
     }); 
     return () => unsubscribeLogs();
@@ -178,13 +172,11 @@ export default function App() {
         console.error("Lỗi khi xóa trạng thái online:", error);
       }
     }
-    // Xóa dữ liệu đăng nhập khỏi bộ nhớ máy
     localStorage.removeItem('kps_current_user');
     setCurrentUser(null);
     setCurrentScreen('auth');
   };
 
-  // Hàm xử lý khi Đăng nhập thành công từ Auth.jsx
   const handleLoginSuccess = (user) => {
     try {
       localStorage.setItem('kps_current_user', JSON.stringify(user));
@@ -200,20 +192,20 @@ export default function App() {
   }
 
   if (currentScreen === 'tamquan') {
-    return<TamQuan 
-      currentUser={currentUser} 
-      onNavigate={(screen) => setCurrentScreen(screen)} 
-      handleLogout={handleLogout} 
-    />
+    return (
+      <TamQuan 
+        currentUser={currentUser} 
+        onNavigate={(screen) => setCurrentScreen(screen)} 
+        handleLogout={handleLogout} 
+      />
+    );
   }
 
-  // Tính tổng công đức toàn hệ thống
   const totalCongDucToanCty = Object.values(allUsers).reduce(
     (sum, user) => sum + (user.totalCongDuc || 0),
     0
   );
 
-  // Thanh điều hướng dùng chung
   const renderHeader = () => (
     <div style={{
       display: 'flex',
@@ -227,7 +219,6 @@ export default function App() {
       borderRadius: '8px',
       border: '1px solid #334155'
     }}>
-      {/* Nút quay lại Tam Quan */}
       <button 
         onClick={() => setCurrentScreen('tamquan')} 
         style={{ padding: '6px 14px', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
@@ -235,13 +226,12 @@ export default function App() {
         ← Cổng Tam Quan
       </button>
 
-      {/* Thông số thống kê */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}> 
         <span style={{ fontSize: '12px', color: '#f7dfad', background: '#0f172a', padding: '5px 10px', borderRadius: '20px', border: '1px solid #384255' }}>
-          🪵KPS Tổng công đức: <b style={{ color: '#fff' }}>{totalCongDucToanCty}</b>
+          🪵 KPS Tổng công đức: <b style={{ color: '#fff' }}>{totalCongDucToanCty}</b>
         </span>
       </div>
-  {/* Nút thoát tài khoản */}
+
       <button 
         onClick={handleLogout} 
         style={{ padding: '6px 12px', background: '#7f1d1d', color: '#fca5a5', border: '1px solid #991b1b', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
@@ -251,7 +241,6 @@ export default function App() {
     </div>
   );
 
-  // Popup hiển thị lời mời Caro
   const renderCaroInvitePopup = () => {
     if (!caroInvite || currentScreen === 'TinhTamDien') return null;
 
@@ -273,7 +262,6 @@ export default function App() {
     );
   };
 
-  // 1. Màn hình Chánh Điện
   if (currentScreen === 'chanhdien') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
@@ -284,7 +272,6 @@ export default function App() {
     );
   }
 
-  // 2. Màn hình Tịnh Tâm Điện
   if (currentScreen === 'TinhTamDien') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
@@ -295,7 +282,6 @@ export default function App() {
     );
   }
 
-  // 3. Màn hình Tàng Kinh Các
   if (currentScreen === 'TangKinhCac') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
@@ -306,7 +292,6 @@ export default function App() {
     );
   }
 
-  // 4. Màn hình Cờ Caro (Gộp chung tất cả các trường hợp bắt đầu bằng CoCaro)
   if (currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_')) {
     const roomId = currentScreen.includes('_') ? currentScreen.split('_')[1] : 'phong_chung';
     return (

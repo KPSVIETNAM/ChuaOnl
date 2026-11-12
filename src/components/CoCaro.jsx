@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { ref, set, update, push, onValue, remove, runTransaction } from 'firebase/database';
 import CaroBoard from './caro/CaroBoard';
 import CaroChat from './caro/CaroChat';
-import CaroInviteModal from './caro/CaroInviteModal'; // <-- Import component popup mời
+import CaroInviteModal from './caro/CaroInviteModal';
 
 const BOARD_SIZE = 15;
 const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
@@ -12,13 +12,12 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
 
-  // MỚI: Đảm bảo bóc tách chính xác roomId từ prop truyền vào hoặc initialRoomId
-const [roomId, setRoomId] = useState(() => {
-  if (initialRoomId && initialRoomId !== 'CoCaro') {
-    return initialRoomId;
-  }
-  return 'phong_chung';
-});
+  const [roomId, setRoomId] = useState(() => {
+    if (initialRoomId && initialRoomId !== 'CoCaro') {
+      return initialRoomId;
+    }
+    return 'phong_chung';
+  });
   const [roomData, setRoomData] = useState(null);
   const [allLobbyPlayers, setAllLobbyPlayers] = useState({}); 
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -29,13 +28,32 @@ const [roomId, setRoomId] = useState(() => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
-    // Tự động đồng bộ roomId nếu component nhận được initialRoomId mới từ App.js (khi bấm chấp nhận lời mời)
+
+  // 0. Xử lý bước 2: Khi được kéo vào page CoCaro kèm theo initialRoomId (từ lời mời được chấp nhận)
   useEffect(() => {
-    if (initialRoomId && initialRoomId !== roomId) {
+    if (initialRoomId && initialRoomId !== 'CoCaro' && initialRoomId !== roomId) {
       setRoomId(initialRoomId);
       setMyStatus('dang_dau');
+
+      // Tự động gia nhập phòng nếu mình chưa có trong danh sách players của phòng đó
+      const roomRef = ref(db, `caro_rooms/${initialRoomId}`);
+      onValue(roomRef, async (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.players) {
+          const players = data.players || {};
+          // Nếu chưa có mình trong phòng và phòng chưa đủ 2 người thì nhảy vào làm người chơi thứ 2 (O)
+          if (!players[username] && Object.keys(players).length < 2) {
+            const updatedPlayers = {
+              ...players,
+              [username]: { fullName, ready: false, symbol: 'O', ruleRequest: false }
+            };
+            await update(roomRef, { players: updatedPlayers });
+          }
+        }
+      }, { onlyOnce: true });
     }
-  }, [initialRoomId]);
+  }, [initialRoomId, username, fullName]);
+
   // 1. Cập nhật trạng thái user online & lấy thống kê ván đấu cá nhân
   useEffect(() => {
     if (!username) return;
@@ -224,6 +242,7 @@ const [roomId, setRoomId] = useState(() => {
     await update(ref(db, `caro_rooms/${roomId}`), updates);
   };
 
+  // Bước 1: Người mời tạo phòng và gửi tín hiệu mời
   const handleInviteUser = async (targetUsername, targetUserObj) => {
     const isMeditating = targetUserObj?.currentScreen === 'TinhTamDien';
     if (isMeditating) {
@@ -234,9 +253,10 @@ const [roomId, setRoomId] = useState(() => {
 
     const newRoomId = `phong_${Date.now()}`;
 
+    // Tạo phòng với người mời là X
     await set(ref(db, `caro_rooms/${newRoomId}`), {
       players: {
-        [username]: { fullName, ready: true, symbol: 'X', ruleRequest: false }
+        [username]: { fullName, ready: false, symbol: 'X', ruleRequest: false }
       },
       board: Array(TOTAL_CELLS).fill(''),
       status: 'waiting',
@@ -244,23 +264,23 @@ const [roomId, setRoomId] = useState(() => {
       winningLine: []
     });
 
+    // Gửi bản ghi mời sang node riêng để App chính định tuyến người được mời vào trang này kèm roomId
     await set(ref(db, `caro_invites/${targetUsername}`), {
       fromUsername: username,
       fromFullName: fullName,
       roomId: newRoomId,
       timestamp: Date.now()
     });
-    //    Cập nhật trạng thái sảnh của chính người mời lên Firebase thành 'dang_dau'
+
     await update(ref(db, `caro_lobby/${username}`), {
       status: 'dang_dau',
       roomId: newRoomId,
       matchedRoomId: newRoomId
     });
+
     setShowInviteModal(false);
     setRoomId(newRoomId);
     setMyStatus('dang_dau');
-    
-    // if (setNotice) setNotice(`Đã gửi lời mời tới ${targetUserObj.fullName || targetUsername}. Đang đợi chấp nhận...`);
   };
 
   const handleSendChat = (e) => {
@@ -421,7 +441,6 @@ const [roomId, setRoomId] = useState(() => {
     <div className="caro-container">
       <div className="caro-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Chỉ hiển thị nút Thoát trận khi đã tạo/vào phòng thực sự   */}
         {roomId && roomId !== 'phong_chung' && (
           <button onClick={handleLeaveRoom} className="leave-room-btn">
             🚪 Thoát trận
@@ -537,7 +556,6 @@ const [roomId, setRoomId] = useState(() => {
         />
       </div>
 
-      {/* Hiển thị Popup Mời từ component tách riêng */}
       {showInviteModal && (
         <CaroInviteModal 
           activeUsers={activeUsers}
