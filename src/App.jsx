@@ -195,16 +195,12 @@ export default function App() {
 
   if (currentScreen === 'tamquan') {
     return (
-     <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
-        <TamQuan 
-          currentUser={currentUser} 
-          onNavigate={(screen) => setCurrentScreen(screen)} 
-          handleLogout={handleLogout} 
-        />
-        {renderCaroInvitePopup()}
-      </div>
+      <TamQuan 
+        currentUser={currentUser} 
+        onNavigate={(screen) => setCurrentScreen(screen)} 
+        handleLogout={handleLogout} 
+      />
     );
-     
   }
 
   const totalCongDucToanCty = Object.values(allUsers).reduce(
@@ -282,7 +278,8 @@ export default function App() {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
-        <TinhTamDien currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} /> 
+        <TinhTamDien currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
+        {renderCaroInvitePopup()}
       </div>
     );
   }
