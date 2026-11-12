@@ -8,8 +8,7 @@ export default function VuLanBaohieu() {
       
       <h3>1. Phần Khởi Nguyện</h3>
       <p>Nam-mô Bản Sư Thích-ca Mâu-ni Phật (3 lần)...</p>
-      <p>Hôm nay là ngày... đệ tử chúng con xin thành tâm đọc tụng kinh chú...</p>
-      
+      <p>  
       1. NGUYỆN HƯƠNG
 (Chủ lễ quỳ ngay thẳng, dâng ba nén hương lên ngang trán, thành
 tâm xướng nguyện. Đại chúng cùng quán tưởng theo lời Nguyện)
@@ -1250,7 +1249,7 @@ các đức Phật, nghe pháp, siêng năng tu tập, cuối cùng được tha
 Ấn Quang Tổ Sư dạy: Ấn tống kinh được vô lượng công đức như vậy,
 nên vào những dịp chúc thọ, thành hôn, cầu phước, cầu tiêu trừ tật bệnh,
 cầu siêu độ hương linh… hãy tinh tấn phát tâm bồ-đề, ấn tống kinh điển,
-để gieo trồng cội phước cho chính mình và thân bằng quyến thuộc.
+để gieo trồng cội phước cho chính mình và thân bằng quyến thuộc.</p>
     </div>
   );
 }

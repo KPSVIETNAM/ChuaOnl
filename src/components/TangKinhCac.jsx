@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
-import VuLanBaohieu from './books/VulanBaohieu';
+import VuLanBaohieu from './books/VuLanBaohieu';
+
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
@@ -22,32 +23,17 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
 
-  // [BẠN CÓ THỂ THAY ĐỔI LINK SÁCH Ở ĐÂY]
- const bookLinks = [
-    { id: 'vulan', title: '📖 Kinh Vu Lan Báo Hiếu' },
-    { id: 'phomon', title: '📖 Kinh Phổ Môn' },
-    { id: 'kimcuong', title: '📖 Kinh Kim Cương' },
-    { id: 'sotay', title: '📖 Sổ tay Tịnh tâm hành trì' },
-  ];
-// Khai báo state để lưu quyển sách đang được mở (mặc định là null hoặc 'vulan')
+  // State lưu quyển sách đang mở (null là hiển thị danh sách, hoặc 'vulan', 'phomon'...)
   const [selectedBookId, setSelectedBookId] = useState(null);
-  <div className="book-list">
-    {bookLinks.map((book) => (
-      <button 
-        key={book.id} 
-        type="button" 
-        className="book-item"
-        onClick={() => setSelectedBookId(book.id)}
-      >
-        {book.title}
-      </button>
-    ))}
-  </div>
 
-  {/* Hiển thị nội dung quyển sách được chọn */}
-  {selectedBookId === 'vulan' && <VuLanBaohieu />}
-  // {selectedBookId === 'phomon' && <PhoMon />}
-  {/* Các sách khác tương tự */}
+  // Danh sách sách trong thư viện (có thể chuyển thành mở component hoặc mở link ngoài tùy ý)
+  const bookLinks = [
+    { id: 'vulan', title: '📖 Kinh Vu Lan Báo Hiếu', type: 'component' },
+    { id: 'phomon', title: '📖 Kinh Phổ Môn', type: 'component' },
+    { id: 'kimcuong', title: '📖 Kinh Kim Cương', type: 'component' },
+    { id: 'sotay', title: '📖 Sổ tay Tịnh tâm hành trì', type: 'component' },
+  ];
+
   // Lắng nghe tổng số lượt đọc kinh toàn hệ thống
   useEffect(() => {
     const kinhRef = ref(db, 'global_stats/totalTangKinhToanCty');
@@ -57,7 +43,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
     return () => unsubscribe();
   }, []);
 
-  // Lắng nghe chat realtime cho Tàng Kinh Các (hoặc dùng chung room_chats)
+  // Lắng nghe chat realtime cho Tàng Kinh Các
   useEffect(() => {
     const chatRef = ref(db, 'room_chats');
     return onValue(chatRef, (snapshot) => {
@@ -150,33 +136,58 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         <h2 className="tang-kinh-title">📖 TÀNG KINH CÁC 📖</h2>
         <p className="tang-kinh-subtitle">Kho tàng kinh điển Phật pháp, nơi tĩnh tâm đọc tụng và chiêm nghiệm</p>
 
-        <div className="tang-kinh-banner">
-          <img 
-            src="/images/Tangkinhcac.jpg" 
-            alt="Tàng Kinh Các" 
-            className="tang-kinh-img"
-          />
-        </div>
+        {/* NẾU ĐANG CHỌN SÁCH THÌ HIỂN THỊ NỘI DUNG SÁCH, CÒN KHÔNG THÌ HIỂN THỊ TRANG CHÍNH */}
+        {selectedBookId ? (
+          <div className="book-reader-view" style={{ width: '100%', textAlign: 'left' }}>
+            <button 
+              onClick={() => setSelectedBookId(null)} 
+              style={{ marginBottom: '15px', padding: '6px 12px', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              ← Quay lại Thư Viện
+            </button>
 
-        {/* KHU VỰC LIÊN KẾT ĐỌC SÁCH */}
-        <div className="book-links-section">
-          <h3>📚 Thư Viện Kinh Sách</h3>
-          <div className="book-links-grid">
-            {bookLinks.map((book, index) => (
-              <a key={index} href={book.url} target="_blank" rel="noopener noreferrer" className="book-link-item">
-                {book.title} ↗
-              </a>
-            ))}
+            {selectedBookId === 'vulan' && <VuLanBaohieu />}
+            {selectedBookId === 'phomon' && <div style={{ padding: '20px', textAlign: 'center' }}>Đang cập nhật Kinh Phổ Môn...</div>}
+            {selectedBookId === 'kimcuong' && <div style={{ padding: '20px', textAlign: 'center' }}>Đang cập nhật Kinh Kim Cương...</div>}
+            {selectedBookId === 'sotay' && <div style={{ padding: '20px', textAlign: 'center' }}>Đang cập nhật Sổ tay Tịnh tâm...</div>}
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="tang-kinh-banner">
+              <img 
+                src="/images/Tangkinhcac.jpg" 
+                alt="Tàng Kinh Các" 
+                className="tang-kinh-img"
+              />
+            </div>
 
-        <div className="tang-kinh-stats">
-          <span>📖 Tổng số lượt tụng kinh toàn đạo: <b>{totalDocKinhCount}</b></span>
-        </div>
+            {/* KHU VỰC LIÊN KẾT ĐỌC SÁCH */}
+            <div className="book-links-section">
+              <h3>📚 Thư Viện Kinh Sách</h3>
+              <div className="book-links-grid">
+                {bookLinks.map((book) => (
+                  <button 
+                    key={book.id} 
+                    type="button" 
+                    className="book-link-item"
+                    onClick={() => setSelectedBookId(book.id)}
+                    style={{ cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    {book.title} 📖
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <button onClick={handleGoMo} className="momo-button">
-          🪵 Gõ Mõ Tích Công Đức
-        </button>
+            <div className="tang-kinh-stats">
+              <span>📖 Tổng số lượt tụng kinh toàn đạo: <b>{totalDocKinhCount}</b></span>
+            </div>
+
+            <button onClick={handleGoMo} className="momo-button">
+              🪵 Gõ Mõ Tích Công Đức
+            </button>
+          </>
+        )}
       </div>
 
       {/* KHUNG CHAT THU GỌN Ở GÓC MÀN HÌNH */}
@@ -249,18 +260,6 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
           align-items: center;
           margin-bottom: 15px;
         }
-        .back-button {
-          padding: 6px 14px;
-          background: #334155;
-          color: #fff;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 13px;
-          transition: background 0.2s;
-        }
-        .back-button:hover { background: #475569; }
         .audio-toggle-btn {
           padding: 6px 14px;
           border: 1px solid #475569;
@@ -297,7 +296,6 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         }
         .tang-kinh-img { width: 100%; height: 280px; object-fit: cover; display: block; }
         
-        /* CSS cho danh sách link sách */
         .book-links-section {
           width: 100%;
           background: #171f2d;
@@ -319,6 +317,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         }
         .book-link-item {
           display: block;
+          width: 100%;
           padding: 8px 12px;
           background: #222d40;
           color: #e2e8f0;
@@ -358,7 +357,6 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         }
         .momo-button:hover { background: #d97706; transform: translateY(-2px); }
 
-        /* CSS cho khung chat thu gọn nổi ở góc */
         .floating-chat-wrapper {
           position: fixed;
           bottom: 20px;
