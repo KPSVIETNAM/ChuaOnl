@@ -849,16 +849,16 @@ export default function VuLanBaohieu() {
       margin: '0 auto',
       fontFamily: 'serif' 
     }}>
-     
+      <div>
         <button 
           onClick={handlePrev} 
           disabled={currentPage === 0}
           style={{
-            padding: '10px 20px',
+            padding: '5px 10px',
             backgroundColor: currentPage === 0 ? '#333' : '#8c6d36',
             color: currentPage === 0 ? '#666' : '#fff',
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '2px',
             cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
             fontWeight: 'bold'
           }}
@@ -870,17 +870,18 @@ export default function VuLanBaohieu() {
           onClick={handleNext} 
           disabled={currentPage === pages.length - 1}
           style={{
-            padding: '10px 20px',
+            padding: '5px 10px',
             backgroundColor: currentPage === pages.length - 1 ? '#333' : '#8c6d36',
             color: currentPage === pages.length - 1 ? '#666' : '#fff',
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '2px',
             cursor: currentPage === pages.length - 1 ? 'not-allowed' : 'pointer',
             fontWeight: 'bold'
           }}
         >
            &rarr;
         </button>
+         </div>
       <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '2px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
