@@ -33,17 +33,17 @@ export default function VuLanBaohieu() {
     // Trang 2
     (
       <div>
-        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '8px' }}>1. Phần Khởi Nguyện (Tiếp theo)</h3>
+        <h3 style={{ color: '#e8bd70', borderBottom: '1px solid #443c2e', paddingBottom: '2px' }}>1. Phần Khởi Nguyện (Tiếp theo)</h3>
         <p>
           Hôm nay nhân mùa Vu-lan, chúng con tề tựu trước Phật đài, phát nguyện trì tụng kinh Vu-lan và kinh Báo Hiếu, nguyện cho: Chánh pháp được lan truyền khắp chốn; lời Phật dạy được phổ biến muôn nơi; người người từ bỏ tham giận si mê; xứ xứ thấm nhuần từ bi, hạnh phúc. O
         </p>
-        <p style={{ marginTop: '15px' }}>
+        <p style={{ marginTop: '8px' }}>
           Kính nguyện: Cha mẹ hiện tại, an khang trường thọ, sữa pháp đượm nhuần, trí tuệ nảy sanh, não phiền dứt sạch. Nguyện cho hàng con cháu, sống hiếu thảo thuận hòa, nhớ ân đức mẹ cha, trở nên người hiền thiện. O
         </p>
-        <p style={{ marginTop: '15px' }}>
+        <p style={{ marginTop: '8px' }}>
           Lại nguyện: Cha mẹ đã quá vãng, cùng tất cả hương linh <em>(tên họ, pháp danh, ngày mất, hưởng thọ)</em>, khởi tâm niệm tuệ giác, thoát khỏi cõi luân hồi, niệm Phật được nhất tâm, siêu sinh về Tịnh Độ.
         </p>
-        <p style={{ marginTop: '15px' }}>
+        <p style={{ marginTop: '8px' }}>
           Khắp nguyện các chúng sanh, tin sâu lời Phật dạy, phát triển tâm bồ-đề, thực hành đạo Bồ-tát, đền đáp bốn ơn trọng, mau chứng thành quả Phật. O
         </p>
         <p><strong>Nam-mô Hương Cúng Dường Bồ-tát</strong> (3 lần) O</p>
@@ -850,7 +850,7 @@ export default function VuLanBaohieu() {
       fontFamily: 'serif' 
     }}>
       <h2 style={{ textAlign: 'center', color: '#e8bd70', marginBottom: '2px' }}>Kinh Vu Lan Báo Hiếu</h2>
-      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '15px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
+      <p style={{ textAlign: 'center', fontStyle: 'italic', marginBottom: '6px', color: '#c5b79b' }}>(Bản trì tụng hàng ngày - Đầy đủ các phần)</p>
       
       {/* Khung nội dung */}
       <div style={{ 

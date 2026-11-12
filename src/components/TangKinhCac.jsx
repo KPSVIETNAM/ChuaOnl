@@ -129,7 +129,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
       <div className="tang-kinh-header-bar">  
         {/* Placeholder trống bên trái để giữ title nằm đúng chính giữa */}
         <div style={{ width: '120px' }}></div>
-
+      
         {/* Chữ Tàng Kinh Các ở giữa, bấm vào sẽ tự trở về trang chính (setSelectedBookId(null)) */}
         <h2 
           className="tang-kinh-title" 
@@ -150,14 +150,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
 
         {/* NẾU ĐANG CHỌN SÁCH THÌ HIỂN THỊ NỘI DUNG SÁCH, CÒN KHÔNG THÌ HIỂN THỊ TRANG CHÍNH */}
         {selectedBookId ? (
-          <div className="book-reader-view" style={{ width: '100%', textAlign: 'left' }}>
-            <button 
-              onClick={() => setSelectedBookId(null)} 
-              style={{ marginBottom: '15px', padding: '6px 12px', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-            >
-              ← Quay lại Thư Viện
-            </button>
-
+          <div className="book-reader-view" style={{ width: '100%', textAlign: 'left' }}> 
             {selectedBookId === 'vulan' && <VuLanBaohieu />}
             {selectedBookId === 'phomon' && <div style={{ padding: '20px', textAlign: 'center' }}>Đang cập nhật Kinh Phổ Môn...</div>}
             {selectedBookId === 'kimcuong' && <div style={{ padding: '20px', textAlign: 'center' }}>Đang cập nhật Kinh Kim Cương...</div>}
