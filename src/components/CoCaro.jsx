@@ -180,18 +180,35 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
     setMyStatus('dang_doi');
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null }); 
   };
-
-  const handleLeaveRoom = async () => {
+const handleLeaveRoom = async () => {
     if (roomId && roomId !== 'phong_chung') {
       const roomRef = ref(db, `caro_rooms/${roomId}`);
-      if (roomData && roomData.status === 'playing') {
-        await update(roomRef, {
-          status: 'cancelled',
-          winner: 'Hủy trận',
-          winReason: `${fullName} đã rời trận. Ván đấu kết thúc.`
-        });
+      
+      if (roomData) {
+        // Tạo bản sao danh sách players và xóa bản thân khỏi phòng
+        const updatedPlayers = { ...(roomData.players || {}) };
+        delete updatedPlayers[username];
+
+        if (roomData.status === 'playing') {
+          // Nếu đang chơi mà bỏ trận: Cập nhật hủy trận + xóa bản thân khỏi players luôn
+          await update(roomRef, {
+            status: 'cancelled',
+            winner: 'Hủy trận',
+            winReason: `${fullName} đã rời trận. Ván đấu kết thúc.`,
+            players: updatedPlayers
+          });
+        } else {
+          // Nếu đang ở phòng chờ (waiting): Kiểm tra xem phòng còn ai không, hết người thì xóa luôn phòng
+          if (Object.keys(updatedPlayers).length === 0) {
+            await remove(roomRef);
+          } else {
+            await update(roomRef, { players: updatedPlayers });
+          }
+        }
       }
     }
+
+    // Reset trạng thái cá nhân về sảnh chờ
     setMyStatus('dang_doi');
     await update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
     setRoomId('phong_chung');
