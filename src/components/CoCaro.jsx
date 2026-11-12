@@ -462,19 +462,7 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
           <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời</button>
         </div>
       </div>
-
-      <div className="lobby-status-panel">
-        <h4 style={{ margin: '0 0 6px 0', color: '#f7dfad', fontSize: '11px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
-        <div className="lobby-players-grid">
-          {Object.entries(allLobbyPlayers)
-          .filter(([u]) => u !== username)
-          .map(([u, p]) => (
-            <div key={u} className="lobby-player-pill">
-              <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
-            </div>
-          ))}
-        </div>
-      </div>
+ 
 
       <div className="caro-status-bar">
         <div className="players-info">
@@ -555,7 +543,19 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
           username={username}
         />
       </div>
-
+        
+      <div className="lobby-status-panel">
+        <h4 style={{ margin: '0 0 6px 0', color: '#f7dfad', fontSize: '11px' }}>📋 Danh sách Kỳ Thủ tại Kỳ Viện:</h4>
+        <div className="lobby-players-grid">
+          {Object.entries(allLobbyPlayers)
+          .filter(([u]) => u !== username)
+          .map(([u, p]) => (
+            <div key={u} className="lobby-player-pill">
+              <b>{p.fullName}</b>: {renderStatusLabel(p.status)}
+            </div>
+          ))}
+        </div>
+      </div>
       {showInviteModal && (
         <CaroInviteModal 
           activeUsers={activeUsers}
