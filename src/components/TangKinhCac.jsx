@@ -256,7 +256,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
             </button>
 
             <img 
-              src="/image/SodoKPS.png" 
+              src="/images/SodoKPS.png" 
               alt="Sơ Đồ KPS" 
               style={{ 
                 maxWidth: '90vw', 
