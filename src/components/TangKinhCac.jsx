@@ -26,12 +26,16 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
   // State lưu quyển sách đang mở (null là hiển thị danh sách, hoặc 'vulan', 'phomon'...)
   const [selectedBookId, setSelectedBookId] = useState(null);
 
-  // Danh sách sách trong thư viện (có thể chuyển thành mở component hoặc mở link ngoài tùy ý)
+  // State quản lý ẩn/hiện Modal Sơ Đồ KPS
+  const [showSodoModal, setShowSodoModal] = useState(false);
+
+  // Danh sách sách trong thư viện
   const bookLinks = [
     { id: 'vulan', title: '📖 Kinh Vu Lan Báo Hiếu', type: 'component' },
     { id: 'phomon', title: '📖 Kinh Phổ Môn', type: 'component' },
     { id: 'kimcuong', title: '📖 Kinh Kim Cương', type: 'component' },
     { id: 'sotay', title: '📖 Sổ tay Tịnh tâm hành trì', type: 'component' },
+    { id: 'Sodocty', title: '📖 Sơ Đồ KPS', type: 'image' }, // Đổi type thành image để phân biệt
   ];
 
   // Lắng nghe tổng số lượt đọc kinh toàn hệ thống
@@ -124,23 +128,29 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
     setChatInput('');
   };
 
+  // Hàm xử lý khi click vào các mục trong Thư Viện Kinh Sách
+  const handleBookClick = (bookId) => {
+    if (bookId === 'Sodocty') {
+      setShowSodoModal(true); // Bật modal hiển thị ảnh Sơ Đồ KPS
+    } else {
+      setSelectedBookId(bookId); // Mở các sách dạng component khác
+    }
+  };
+
   return (
     <div className="tang-kinh-container">
       <div className="tang-kinh-header-bar">  
-        {/* Placeholder trống bên trái để giữ title nằm đúng chính giữa */}
         <div style={{ width: '120px' }}></div>
       
-        {/* Chữ Tàng Kinh Các ở giữa, bấm vào sẽ tự trở về trang chính (setSelectedBookId(null)) */}
         <h2 
           className="tang-kinh-title" 
-          onClick={() => setSelectedBookId(null)}
+          onClick={() => { setSelectedBookId(null); setShowSodoModal(false); }}
           style={{ cursor: 'pointer', margin: 0, textAlign: 'center', flex: 1 }}
           title="Trở về trang chính Tàng Kinh Các"
         >
           📖 TÀNG KINH CÁC 📖
         </h2> 
 
-        {/* Nút nhạc nền chuyển sang bên phải */}
         <button onClick={toggleAudio} className={`audio-toggle-btn ${isAudioPlaying ? 'active' : 'muted'}`} style={{ width: '120px' }}>
           {isAudioPlaying ? '🔊 Nhạc nền: Bật' : '🔇 Nhạc nền: Tắt'}
         </button> 
@@ -148,7 +158,6 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
 
       <div className="tang-kinh-content"> 
 
-        {/* NẾU ĐANG CHỌN SÁCH THÌ HIỂN THỊ NỘI DUNG SÁCH, CÒN KHÔNG THÌ HIỂN THỊ TRANG CHÍNH */}
         {selectedBookId ? (
           <div className="book-reader-view" style={{ width: '100%', textAlign: 'left' }}> 
             {selectedBookId === 'vulan' && <VuLanBaohieu />}
@@ -175,7 +184,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
                     key={book.id} 
                     type="button" 
                     className="book-link-item"
-                    onClick={() => setSelectedBookId(book.id)}
+                    onClick={() => handleBookClick(book.id)}
                     style={{ cursor: 'pointer', textAlign: 'left' }}
                   >
                     {book.title} 📖
@@ -194,6 +203,72 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
           </>
         )}
       </div>
+
+      {/* MODAL HIỂN THỊ SƠ ĐỒ KPS (IMAGE) */}
+      {showSodoModal && (
+        <div 
+          onClick={() => setShowSodoModal(false)} 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div 
+            style={{ 
+              position: 'relative', 
+              background: '#1e293b', 
+              padding: '15px', 
+              borderRadius: '12px',
+              border: '1px solid #475569',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
+            }}
+            onClick={(e) => e.stopPropagation()} // Chặn sự kiện nổi bọt khi click vào khung ảnh
+          >
+            <button 
+              onClick={() => setShowSodoModal(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: '#ef4444',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '30px',
+                height: '30px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10
+              }}
+            >
+              ✕
+            </button>
+
+            <img 
+              src="/image/sodo.png" 
+              alt="Sơ Đồ KPS" 
+              style={{ 
+                maxWidth: '90vw', 
+                maxHeight: '85vh', 
+                objectFit: 'contain', 
+                display: 'block',
+                borderRadius: '6px'
+              }} 
+            />
+          </div>
+        </div>
+      )}
 
       {/* KHUNG CHAT THU GỌN Ở GÓC MÀN HÌNH */}
       <div className={`floating-chat-wrapper ${isChatOpen ? 'open' : 'closed'}`}>
@@ -464,6 +539,5 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
         }
       `}</style>
     </div>
-  ); 
- 
+  );
 };
