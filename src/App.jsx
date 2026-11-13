@@ -139,11 +139,13 @@ export default function App() {
 
       let joinedRoom;
       let transactionAbortReason;
+      let lastValidRoomData = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const roomSnapshot = await get(roomRef);
         const currentRoom = roomSnapshot.val();
         transactionAbortReason = getJoinRejectionReason(currentRoom);
         if (transactionAbortReason) break;
+        lastValidRoomData = currentRoom;
 
         joinedRoom = await runTransaction(roomRef, (currentRoom) => {
           if (getJoinRejectionReason(currentRoom)) return;
@@ -161,10 +163,13 @@ export default function App() {
       if (!joinedRoom?.committed) {
         const latestRoom = (await get(roomRef)).val();
         const transactionSnapshot = joinedRoom?.snapshot?.val();
-        const latestRoomRejection =
-          getJoinRejectionReason(latestRoom) || getJoinRejectionReason(transactionSnapshot);
-        transactionAbortReason = latestRoomRejection ||
-          'Firebase không xác nhận giao dịch dù phòng vẫn hợp lệ; kiểm tra quyền ghi Realtime Database hoặc lỗi transaction trong console.';
+        const latestRoomRejection = getJoinRejectionReason(latestRoom);
+        const transactionRoomRejection = getJoinRejectionReason(transactionSnapshot);
+        const inconsistentRoomRead = !latestRoom && Boolean(lastValidRoomData);
+        transactionAbortReason = latestRoomRejection && inconsistentRoomRead
+          ? 'Lần đọc trước thấy phòng hợp lệ nhưng lần đọc sau trả về rỗng; kiểm tra đúng Firebase project/database và roomPath trong console.'
+          : latestRoomRejection || transactionRoomRejection ||
+            'Firebase không xác nhận giao dịch dù phòng vẫn hợp lệ; kiểm tra quyền ghi Realtime Database hoặc lỗi transaction trong console.';
         console.warn('Không thể chấp nhận lời mời cờ:', {
           game,
           roomPath: `board_games/${game}/rooms/${roomId}`,
@@ -172,11 +177,12 @@ export default function App() {
           fromUsername,
           invitedUsername: currentUser.username,
           reason: transactionAbortReason,
+          lastValidRoomData,
           roomAtTransactionEnd: transactionSnapshot,
           latestRoom
         });
         alert(`Không thể vào phòng ${roomId} (${game}): ${transactionAbortReason}`);
-        if (latestRoomRejection) {
+        if (latestRoomRejection && !inconsistentRoomRead) {
           const currentInvite = (await get(inviteRef)).val();
           if (currentInvite?.game === game && currentInvite?.roomId === roomId) {
             await remove(inviteRef);
