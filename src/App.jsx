@@ -137,20 +137,43 @@ export default function App() {
         };
       };
 
+      const runJoinTransactionWithLiveRoom = () => new Promise((resolve, reject) => {
+        const state = { settled: false, transactionStarted: false };
+        const finish = (callback, value) => {
+          if (state.settled) return;
+          state.settled = true;
+          clearTimeout(timeoutId);
+          unsubscribe();
+          callback(value);
+        };
+        const timeoutId = setTimeout(() => {
+          finish(reject, new Error('Không nhận được dữ liệu phòng từ Firebase trong thời gian chờ.'));
+        }, 10000);
+
+        const unsubscribe = onValue(roomRef, (snapshot) => {
+          if (state.settled || state.transactionStarted || !snapshot.exists()) return;
+          state.transactionStarted = true;
+          runTransaction(roomRef, (currentRoom) => {
+            if (getJoinRejectionReason(currentRoom)) return;
+            return buildJoinedRoom(currentRoom);
+          }, { applyLocally: false }).then(
+            (result) => finish(resolve, result),
+            (error) => finish(reject, error)
+          );
+        }, (error) => finish(reject, error));
+      });
+
       let joinedRoom;
       let transactionAbortReason;
-      let lastValidRoomData = null;
+      const lastValidRoomReads = [];
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const roomSnapshot = await get(roomRef);
         const currentRoom = roomSnapshot.val();
         transactionAbortReason = getJoinRejectionReason(currentRoom);
         if (transactionAbortReason) break;
-        lastValidRoomData = currentRoom;
+        lastValidRoomReads.push(currentRoom);
 
-        joinedRoom = await runTransaction(roomRef, (currentRoom) => {
-          if (getJoinRejectionReason(currentRoom)) return;
-          return buildJoinedRoom(currentRoom);
-        }, { applyLocally: false });
+        joinedRoom = await runJoinTransactionWithLiveRoom();
 
         if (joinedRoom.committed) break;
 
@@ -165,7 +188,7 @@ export default function App() {
         const transactionSnapshot = joinedRoom?.snapshot?.val();
         const latestRoomRejection = getJoinRejectionReason(latestRoom);
         const transactionRoomRejection = getJoinRejectionReason(transactionSnapshot);
-        const inconsistentRoomRead = !latestRoom && Boolean(lastValidRoomData);
+        const inconsistentRoomRead = !latestRoom && lastValidRoomReads.length > 0;
         transactionAbortReason = latestRoomRejection && inconsistentRoomRead
           ? 'Lần đọc trước thấy phòng hợp lệ nhưng lần đọc sau trả về rỗng; kiểm tra đúng Firebase project/database và roomPath trong console.'
           : latestRoomRejection || transactionRoomRejection ||
@@ -177,7 +200,7 @@ export default function App() {
           fromUsername,
           invitedUsername: currentUser.username,
           reason: transactionAbortReason,
-          lastValidRoomData,
+          lastValidRoomData: lastValidRoomReads[lastValidRoomReads.length - 1] || null,
           roomAtTransactionEnd: transactionSnapshot,
           latestRoom
         });
