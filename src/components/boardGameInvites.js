@@ -1,5 +1,12 @@
-import { get, ref, update } from 'firebase/database';
+import { get, ref, set, update } from 'firebase/database';
 import { db } from '../firebase';
+
+export async function sendGameInvite(targetUsername, invite) {
+  await set(ref(db, `board_game_invites/${targetUsername}`), {
+    ...invite,
+    timestamp: Date.now()
+  });
+}
 
 export async function revokePendingGameInvites(game, roomId, roomData) {
   const invitedUsers = roomData?.invitedUsers || {};

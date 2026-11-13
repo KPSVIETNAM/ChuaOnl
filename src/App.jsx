@@ -5,8 +5,7 @@ import TamQuan from './components/TamQuan';
 import ChanhDien from './components/ChanhDien'; 
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
-import CoCaro from './components/CoCaro';
-
+const CoCaro = lazy(() => import('./components/CoCaro'));
 const CoVua = lazy(() => import('./components/CoVua'));
 const CoTuong = lazy(() => import('./components/CoTuong'));
 const CoVay = lazy(() => import('./components/covay'));
@@ -38,8 +37,6 @@ export default function App() {
   const [allUsers, setAllUsers] = useState({});
   const [logs, setLogs] = useState([]); 
 
-  // State & Lắng nghe lời mời Cờ Caro riêng cho tài khoản
-  const [caroInvite, setCaroInvite] = useState(null);
   const [boardGameInvite, setBoardGameInvite] = useState(null);
 
   // Tự động đồng bộ vị trí màn hình hiện tại lên Firebase Realtime Database
@@ -47,23 +44,19 @@ export default function App() {
     if (!currentUser?.username) return;
     const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
 
+    const isInBoardGame = currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_') ||
+      currentScreen === 'CoVua' || currentScreen.startsWith('CoVua_') ||
+      currentScreen === 'CoTuong' || currentScreen.startsWith('CoTuong_') ||
+      currentScreen === 'covay' || currentScreen.startsWith('covay_');
     update(userOnlineRef, {
       username: currentUser.username,
       fullName: currentUser.fullName || currentUser.username,
       gender: currentUser.gender || 'khac',
       currentScreen: currentScreen,
-      lastActive: Date.now()
+      lastActive: Date.now(),
+      ...(!isInBoardGame ? { activeGame: null, gameStatus: null } : {})
     }).catch((err) => console.error("Lỗi cập nhật vị trí:", err));
   }, [currentScreen, currentUser]);
-
-  // Lắng nghe lời mời Cờ Caro đến tài khoản của mình
-  useEffect(() => {
-    if (!currentUser?.username) return;
-    const inviteRef = ref(db, `caro_invites/${currentUser.username}`);
-    return onValue(inviteRef, (snapshot) => {
-      setCaroInvite(snapshot.val());
-    });
-  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser?.username) return;
@@ -81,6 +74,7 @@ export default function App() {
     }
     const { game, roomId, fromUsername } = invite;
     const games = {
+      caro: { screen: 'CoCaro', colors: ['X', 'O'] },
       chess: { screen: 'CoVua', colors: ['w', 'b'] },
       xiangqi: { screen: 'CoTuong', colors: ['r', 'b'] },
       go: { screen: 'covay', colors: ['B', 'W'] }
@@ -244,10 +238,9 @@ export default function App() {
     const snapshot = await get(inviteRef);
     const invite = snapshot.val();
     if (invite?.game && invite?.roomId) {
-      const statusRef = ref(db, `board_games/${invite.game}/rooms/${invite.roomId}/inviteStatus/${currentUser.username}`);
-      const result = await runTransaction(statusRef, (status) => status === 'pending' ? 'declined' : undefined, {
-        applyLocally: false
-      });
+      const statusPath = `board_games/${invite.game}/rooms/${invite.roomId}/inviteStatus/${currentUser.username}`;
+      const statusRef = ref(db, statusPath);
+      const result = await runTransaction(statusRef, (status) => status === 'pending' ? 'declined' : undefined, { applyLocally: false });
       if (result.committed) {
         const latestInvite = (await get(inviteRef)).val();
         if (latestInvite?.game === invite.game && latestInvite?.roomId === invite.roomId) {
@@ -258,84 +251,6 @@ export default function App() {
       await remove(inviteRef);
     }
     setBoardGameInvite(null);
-  };
-
-  // Hàm chấp nhận lời mời Caro (Đã tinh chỉnh lại để đồng bộ chuẩn xác trạng thái vào trận)
-  const handleAcceptInvite = async () => {
-    if (!caroInvite) return;
-    const roomToJoin = caroInvite.roomId;
-    const inviterUsername = caroInvite.fromUsername;
-
-    try {
-      // 1. Kiểm tra trạng thái online hiện tại của người mời từ Firebase
-      const inviterOnlineSnap = await get(ref(db, `online_users/${inviterUsername}`));
-      const inviterData = inviterOnlineSnap.exists() ? inviterOnlineSnap.val() : null;
-
-      const inviterScreen = inviterData?.currentScreen || '';
-      const isInviterInCaro = inviterScreen === 'caro' || inviterScreen.startsWith('CoCaro');
-
-      // 2. Lấy dữ liệu phòng cờ để kiểm tra trạng thái ván đấu
-      const roomRef = ref(db, `caro_rooms/${roomToJoin}`);
-      const roomSnap = await get(roomRef);
-      const roomData = roomSnap.exists() ? roomSnap.val() : null;
-
-      if (!isInviterInCaro || !roomData || roomData.status !== 'waiting') {
-        alert("⚠️ Lời mời đã hết hạn hoặc người mời không còn ở phòng chờ!");
-        await remove(ref(db, `caro_invites/${currentUser.username}`));
-        setCaroInvite(null);
-        return;
-      }
-
-      // 3. Đưa người nhận vào phòng với quân 'O', set sẵn sàng (ready: true) và bật luôn trạng thái playing
-      
-      const players = roomData.players || {};
-      setCurrentScreen(`CoCaro`);
-      const updatedPlayers = {
-        ...players,
-        [currentUser.username]: {
-          fullName: currentUser.fullName || currentUser.username,
-          ready: false,
-          symbol: 'O',
-          ruleRequest: false
-        }
-      };
-
-      const playerKeys = Object.keys(updatedPlayers);
-      const firstPlayerKey = playerKeys[0] || inviterUsername;
-
-      await update(roomRef, {
-        players: updatedPlayers,
-        status: 'playing',
-        turn: firstPlayerKey 
-      });
-
-      await update(ref(db, `caro_lobby/${currentUser.username}`), {
-        status: 'dang_dau',
-        roomId: roomToJoin,
-        matchedRoomId: roomToJoin
-      });
-
-      await update(ref(db, `online_users/${currentUser.username}`), {
-        currentScreen: `CoCaro_${roomToJoin}`
-      });
-
-      await remove(ref(db, `caro_invites/${currentUser.username}`));
-      setCaroInvite(null);
-
-      // Chuyển màn hình người nhận vào thẳng phòng cờ
-      setCurrentScreen(`CoCaro_${roomToJoin}`);
-
-    } catch (err) {
-      console.error("Lỗi khi chấp nhận lời mời:", err);
-      alert("Cơ sở dữ liệu bận, vui lòng thử lại!");
-    }
-  };
-
-  // Hàm từ chối lời mời Caro
-  const handleDeclineInvite = async () => {
-    if (!caroInvite) return;
-    await remove(ref(db, `caro_invites/${currentUser.username}`));
-    setCaroInvite(null);
   };
 
   // Lắng nghe người đang online
@@ -370,7 +285,7 @@ export default function App() {
     if (currentUser?.username) {
       try {
         const username = currentUser.username;
-        const games = ['chess', 'xiangqi', 'go'];
+        const games = ['caro', 'chess', 'xiangqi', 'go'];
         await Promise.all(games.map(async (game) => {
           const lobbySnapshot = await get(ref(db, `board_games/${game}/lobby/${username}`));
           const roomId = lobbySnapshot.val()?.roomId;
@@ -478,30 +393,9 @@ export default function App() {
     </div>
   );
 
-  const renderCaroInvitePopup = () => {
-    if (!caroInvite || currentScreen === 'TinhTamDien') return null;
-
-    return (
-      <div style={{
-        position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999,
-        backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
-        borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
-      }}>
-        <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>⚔️ Thách đấu Cờ Caro!</h4>
-        <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
-          <b>{caroInvite.fromFullName}</b> mời đạo hữu vào chơi cờ!
-        </p>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={handleAcceptInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
-          <button onClick={handleDeclineInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
-        </div>
-      </div>
-    );
-  };
-
   function renderBoardGameInvitePopup() {
-    if (!boardGameInvite) return null;
-    const gameNames = { chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây' };
+    if (!boardGameInvite || currentScreen === 'TinhTamDien') return null;
+    const gameNames = { caro: 'Caro', chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây' };
     return (
       <div style={{
         position: 'fixed', bottom: '20px', right: '20px', zIndex: 10000,
@@ -525,7 +419,6 @@ export default function App() {
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
         <ChanhDien currentUser={currentUser} activeUsers={activeUsers} allUsers={allUsers} logs={logs} />
-        {renderCaroInvitePopup()}
         {renderBoardGameInvitePopup()}
       </div>
     );
@@ -536,7 +429,6 @@ export default function App() {
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
         <TinhTamDien currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
-        {renderCaroInvitePopup()}
         {renderBoardGameInvitePopup()}
       </div>
     );
@@ -547,32 +439,13 @@ export default function App() {
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
         <TangKinhCac currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
-        {renderCaroInvitePopup()}
-        {renderBoardGameInvitePopup()}
-      </div>
-    );
-  }
-
-  if (currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_')) {
-    const roomId = currentScreen.includes('_') ? currentScreen.split('_')[1] : 'phong_chung';
-    return (
-      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
-        {renderHeader()}
-        <CoCaro 
-          currentUser={currentUser}
-          roomId={roomId}
-          activeUsers={activeUsers}
-          setNotice={(msg) => alert(msg)}
-          onBack={() => setCurrentScreen('tamquan')}
-          onRoomLeave={() => setCurrentScreen(prefix)}
-        />
-        {renderCaroInvitePopup()}
         {renderBoardGameInvitePopup()}
       </div>
     );
   }
 
   const boardGameRoutes = [
+    { prefix: 'CoCaro', Component: CoCaro },
     { prefix: 'CoVua', Component: CoVua },
     { prefix: 'CoTuong', Component: CoTuong },
     { prefix: 'covay', Component: CoVay }
@@ -593,6 +466,7 @@ export default function App() {
             activeUsers={activeUsers}
             setNotice={(msg) => alert(msg)}
             onBack={() => setCurrentScreen('tamquan')}
+            onRoomLeave={() => setCurrentScreen(prefix)}
           />
         </Suspense>
         {renderBoardGameInvitePopup()}

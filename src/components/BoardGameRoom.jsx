@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { onValue, push, ref, remove, runTransaction, set, update } from 'firebase/database';
 import { db } from '../firebase';
-import { revokePendingGameInvites } from './boardGameInvites';
+import { revokePendingGameInvites, sendGameInvite } from './boardGameInvites';
 import FloatingCommunityChat from './FloatingCommunityChat';
+import BoardGameCommonChat from './BoardGameCommonChat';
+import GameInviteModal from './GameInviteModal';
+import { GAME_STATUSES, updateGamePresence } from './gamePresence';
 import {
   applyBoardMove,
   createInitialBoard,
@@ -16,6 +19,7 @@ import {
 } from './gameRules';
 
 const GAME_INFO = {
+  caro: { title: 'Cờ Caro', icon: '❌', namespace: 'CoCaro', colors: ['X', 'O'], colorNames: { X: 'X', O: 'O' } },
   chess: { title: 'Cờ vua', icon: '♟️', namespace: 'CoVua', colors: ['w', 'b'], colorNames: { w: 'Trắng', b: 'Đen' } },
   xiangqi: { title: 'Cờ tướng', icon: '🀄', namespace: 'CoTuong', colors: ['r', 'b'], colorNames: { r: 'Đỏ', b: 'Đen' } },
   go: { title: 'Cờ vây', icon: '⚫', namespace: 'covay', colors: ['B', 'W'], colorNames: { B: 'Đen', W: 'Trắng' } }
@@ -25,7 +29,7 @@ function getPlayerColor(game, playerCount) {
   return GAME_INFO[game].colors[playerCount % 2];
 }
 
-function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, checkedKingIndex }) {
+function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, checkedKingIndex, winningLine = [] }) {
   const [selection, setSelection] = useState(null);
   const selected = selection?.board === board ? selection.index : null;
   const symbols = useMemo(() => getGameSymbols(game), [game]);
@@ -33,12 +37,12 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
   const legalMoves = selected === null ? [] : getLegalMoves(game, board, selected, gameState);
   const visualOrder = useMemo(() => {
     const indices = Array.from({ length: board.length }, (_, index) => index);
-    return myColor === GAME_INFO[game].colors[1] ? indices.reverse() : indices;
+    return game !== 'caro' && myColor === GAME_INFO[game].colors[1] ? indices.reverse() : indices;
   }, [board.length, game, myColor]);
 
   const onCellClick = (index) => {
     if (!canMove) return;
-    if (game === 'go') {
+    if (game === 'go' || game === 'caro') {
       if (turn === myColor) onMove({ to: index });
       return;
     }
@@ -61,7 +65,9 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
         const row = Math.floor(index / size);
         const col = index % size;
         const isSelected = selected === index;
-        const isLegal = game === 'go' ? !piece : legalMoves.some((move) => move.to === index);
+        const isLegal = game === 'go' || game === 'caro'
+          ? !piece
+          : legalMoves.some((move) => move.to === index);
         return (
           <button
             type="button"
@@ -69,6 +75,8 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
             className={[
               'board-game-cell',
               game === 'chess' && (row + col) % 2 === 1 ? 'dark-square' : '',
+              game === 'caro' ? 'caro-cell' : '',
+              game === 'caro' && winningLine.includes(index) ? 'caro-winning-cell' : '',
               game === 'go' ? 'go-point' : '',
               game === 'xiangqi' ? 'xiangqi-point' : '',
               isSelected ? 'selected' : '',
@@ -80,8 +88,9 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
             aria-label={`Hàng ${row + 1}, cột ${col + 1}${piece ? `, ${piece}` : ''}`}
           >
             {piece && game === 'go' && <span className={`go-stone ${piece === 'B' ? 'black-stone' : 'white-stone'}`} />}
-            {piece && game !== 'go' && <span className={`game-piece ${piece[0] === 'w' || piece[0] === 'r' ? 'light-piece' : 'dark-piece'}`}>{symbols[piece]}</span>}
-            {!piece && isLegal && game !== 'go' && <span className="move-dot" />}
+            {piece && game === 'caro' && <span className={`caro-symbol ${piece}`}>{piece}</span>}
+            {piece && game !== 'go' && game !== 'caro' && <span className={`game-piece ${piece[0] === 'w' || piece[0] === 'r' ? 'light-piece' : 'dark-piece'}`}>{symbols[piece]}</span>}
+            {!piece && isLegal && game !== 'go' && game !== 'caro' && <span className="move-dot" />}
           </button>
         );
       })}
@@ -98,14 +107,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const roomId = initialRoomId || activeRoomId;
   const [roomData, setRoomData] = useState(null);
   const [lobby, setLobby] = useState({});
-  const [status, setStatus] = useState('dang_doi');
+  const [status, setStatus] = useState(GAME_STATUSES.waiting);
   const [stats, setStats] = useState({ wins: 0, losses: 0 });
   const [chatText, setChatText] = useState('');
-  const [commonChatMessages, setCommonChatMessages] = useState([]);
-  const [commonChatText, setCommonChatText] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const chatRef = useRef(null);
-  const commonChatRef = useRef(null);
   const lastCheckSoundRef = useRef(null);
 
   useEffect(() => {
@@ -130,6 +136,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   }, [basePath, game, fullName, initialRoomId, username]);
 
   useEffect(() => {
+    updateGamePresence(username, game, status)
+      .catch((error) => console.error('Lỗi cập nhật trạng thái Kỳ Viện:', error));
+  }, [game, status, username]);
+
+  useEffect(() => {
     const lobbyRef = ref(db, `${basePath}/lobby`);
     return onValue(lobbyRef, async (snapshot) => {
       const players = snapshot.val() || {};
@@ -140,13 +151,13 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       }
       if (myEntry?.matchedRoomId && myEntry.matchedRoomId !== roomId) {
         setActiveRoomId(myEntry.matchedRoomId);
-        setStatus(myEntry.status || 'dang_doi');
+        setStatus(myEntry.status || GAME_STATUSES.waiting);
       }
 
-      if (myEntry?.status !== 'dang_tim_ghep' || roomId) return;
+      if (myEntry?.status !== GAME_STATUSES.searching || roomId) return;
       const opponentKey = Object.keys(players).find((key) =>
         key !== username &&
-        players[key].status === 'dang_tim_ghep' &&
+        players[key].status === GAME_STATUSES.searching &&
         !players[key].matchedRoomId
       );
       if (!opponentKey || username > opponentKey) return;
@@ -167,7 +178,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       await update(ref(db, `${basePath}/lobby/${username}`), { status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId });
       await update(ref(db, `${basePath}/lobby/${opponentKey}`), { status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId });
       setActiveRoomId(newRoomId);
-      setStatus('dang_dau');
+      setStatus(GAME_STATUSES.playing);
     });
   }, [basePath, game, fullName, roomId, username]);
 
@@ -181,24 +192,15 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   }, [basePath, roomId]);
 
   useEffect(() => {
-    if (roomId) return undefined;
-    return onValue(ref(db, 'board_games/common_chat'), (snapshot) => {
-      const data = snapshot.val() || {};
-      setCommonChatMessages(Object.entries(data).map(([id, message]) => ({ id, ...message })).slice(-40));
-    }, (error) => console.error('Lỗi đọc chat chung Kỳ Viện:', error));
-  }, [roomId]);
-
-  useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [roomData?.chat]);
-
-  useEffect(() => {
-    if (commonChatRef.current) commonChatRef.current.scrollTop = commonChatRef.current.scrollHeight;
-  }, [commonChatMessages]);
 
   const players = roomData?.players || {};
   const playerKeys = Object.keys(players);
   const myPlayer = players[username];
+  const opponentPlayer = playerKeys.map((key) => players[key]).find((player) => player !== myPlayer);
+  const isMyRuleRequest = myPlayer?.ruleRequest || false;
+  const isOpponentRuleRequest = opponentPlayer?.ruleRequest || false;
   const isMyTurn = roomData?.turn === username;
   const opponentName = playerKeys.find((key) => key !== username);
   const checkedKingIndex = roomData?.status === 'playing'
@@ -231,7 +233,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
 
   const handleRandomMatch = async () => {
     setActiveRoomId(null);
-    setStatus('dang_tim_ghep');
+    setStatus(GAME_STATUSES.searching);
     await update(ref(db, `${basePath}/lobby/${username}`), {
       status: 'dang_tim_ghep',
       roomId: null,
@@ -260,7 +262,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         inviteStatus: { [targetUsername]: 'pending' }
       });
       setActiveRoomId(targetRoomId);
-      setStatus('dang_doi');
+      setStatus(GAME_STATUSES.waiting);
       await update(ref(db, `${basePath}/lobby/${username}`), {
         status: 'dang_doi', roomId: targetRoomId, matchedRoomId: targetRoomId
       });
@@ -276,12 +278,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       roomId: targetRoomId,
       matchedRoomId: targetRoomId
     });
-    await set(ref(db, `board_game_invites/${targetUsername}`), {
+    await sendGameInvite(targetUsername, {
       game,
       roomId: targetRoomId,
       fromUsername: username,
-      fromFullName: fullName,
-      timestamp: Date.now()
+      fromFullName: fullName
     });
   };
 
@@ -313,7 +314,8 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       turn: result ? '' : nextTurn,
       status: result ? 'finished' : 'playing',
       winner: result?.winner || null,
-      resultReason: result?.reason || null
+      resultReason: result?.reason || null,
+      winningLine: result?.winningLine || []
     });
     if (winnerUsername) recordResult(winnerUsername, playerKeys.find((key) => key !== winnerUsername));
     if (result) updateLobbyStatus('dang_doi');
@@ -322,14 +324,19 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const handleMove = async (move) => {
     if (!roomData || roomData.status !== 'playing' || !isMyTurn) return;
     const currentSymbol = myPlayer?.symbol;
-    if (game === 'go') {
+    if (game === 'go' || game === 'caro') {
       const previousState = roomData.gameState || {};
-      const result = applyBoardMove(game, roomData.board, { ...move, side: currentSymbol }, previousState);
+      const result = applyBoardMove(game, roomData.board, { ...move, side: currentSymbol }, {
+        ...previousState,
+        ...(game === 'caro' ? { blockRule: roomData.blockRule || false } : {})
+      });
       if (result.error) {
         setNotice?.(result.error);
         return;
       }
-      const nextState = { ...result.state, previousBoard: roomData.board };
+      const nextState = game === 'go'
+        ? { ...result.state, previousBoard: roomData.board }
+        : { ...result.state, blockRule: roomData.blockRule || false };
       const nextTurn = opponentName;
       const gameResult = getMoveResult(game, result.board, players[nextTurn]?.symbol, nextState);
       await finishMove(result.board, nextState, nextTurn, gameResult);
@@ -355,6 +362,25 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
     await finishMove(roomData.board, nextState, nextTurn, gameResult);
   };
 
+  const handleToggleRuleRequest = async () => {
+    if (game !== 'caro' || !roomData || !myPlayer) return;
+    const updatedPlayers = {
+      ...players,
+      [username]: { ...myPlayer, ruleRequest: !myPlayer.ruleRequest }
+    };
+    const allAgreed = playerKeys.length === 2 &&
+      playerKeys.every((key) => updatedPlayers[key]?.ruleRequest);
+    if (allAgreed) {
+      playerKeys.forEach((key) => {
+        updatedPlayers[key] = { ...updatedPlayers[key], ruleRequest: false };
+      });
+    }
+    await update(ref(db, `${basePath}/rooms/${roomId}`), {
+      players: updatedPlayers,
+      ...(allAgreed ? { blockRule: !roomData.blockRule } : {})
+    });
+  };
+
   const handleRematch = async () => {
     const updatedPlayers = {
       ...players,
@@ -376,9 +402,10 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       status: 'playing',
       turn: playerKeys[0],
       winner: null,
-      resultReason: null
+      resultReason: null,
+      winningLine: []
     });
-    setStatus('dang_dau');
+    setStatus(GAME_STATUSES.playing);
   };
 
   const handleLeaveRoom = async () => {
@@ -407,7 +434,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
     await update(ref(db, `${basePath}/lobby/${username}`), { status: 'dang_doi', roomId: null, matchedRoomId: null });
     setActiveRoomId(null);
     setRoomData(null);
-    setStatus('dang_doi');
+    setStatus(GAME_STATUSES.waiting);
     onRoomLeave?.();
   };
 
@@ -423,25 +450,6 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
     setChatText('');
-  };
-
-  const sendCommonChat = async (event) => {
-    event.preventDefault();
-    const text = commonChatText.trim();
-    if (!text || !username) return;
-    try {
-      await push(ref(db, 'board_games/common_chat'), {
-        username,
-        sender: fullName,
-        text: text.slice(0, 300),
-        timestamp: Date.now(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
-      setCommonChatText('');
-    } catch (error) {
-      console.error('Lỗi gửi chat chung Kỳ Viện:', error);
-      setNotice?.('Không gửi được tin nhắn. Vui lòng thử lại.');
-    }
   };
 
   const moveTurn = roomData?.players?.[roomData.turn]?.fullName || 'Đang chờ';
@@ -478,22 +486,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
               ))}
             </div>
           </div>
-          <aside className="board-game-chat board-game-common-chat">
-            <h3>💬 Chat chung Kỳ Viện</h3>
-            <div className="board-game-messages" ref={commonChatRef}>
-              {commonChatMessages.length === 0 ? (
-                <p className="empty-chat">Chưa có tin nhắn.</p>
-              ) : commonChatMessages.map((message) => (
-                <div key={message.id} className={`board-game-message ${message.username === username ? 'mine' : ''}`}>
-                  <b>{message.sender}</b><small>{message.time}</small><p>{message.text}</p>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={sendCommonChat}>
-              <input value={commonChatText} onChange={(event) => setCommonChatText(event.target.value)} maxLength={300} placeholder="Nhập tin nhắn..." />
-              <button type="submit" disabled={!username}>Gửi</button>
-            </form>
-          </aside>
+          <BoardGameCommonChat currentUser={currentUser} />
         </div>
       ) : !roomData ? (
         <div className="board-game-lobby"><p>Đang kết nối phòng chơi...</p></div>
@@ -532,9 +525,20 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                 {myPlayer.ready ? 'Hủy sẵn sàng' : 'Sẵn sàng'}
               </button>
             )}
+            {game === 'caro' && playerKeys.length === 2 && (
+              <div className="caro-rule-box">
+                <span>Chặn hai đầu: <b>{roomData.blockRule ? 'Bật' : 'Tắt'}</b></span>
+                <button type="button" onClick={handleToggleRuleRequest}>
+                  {isMyRuleRequest ? '✓ Đã đồng ý' : isOpponentRuleRequest ? 'Đồng ý đổi' : 'Đề xuất đổi'}
+                </button>
+                {isOpponentRuleRequest && !isMyRuleRequest && <small>Đối thủ đề xuất đổi luật</small>}
+              </div>
+            )}
             {roomData.status === 'playing' && (
               <strong>
-                {isMyTurn ? 'Đến lượt bạn — chọn quân rồi chọn ô xanh' : `Lượt của ${moveTurn}`}
+                {isMyTurn
+                  ? game === 'caro' ? 'Đến lượt bạn — chọn ô trống' : 'Đến lượt bạn — chọn quân rồi chọn ô xanh'
+                  : `Lượt của ${moveTurn}`}
                 {score}
               </strong>
             )}
@@ -547,7 +551,9 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                     ? 'Đang chờ người chơi thứ hai tham gia phòng.'
                     : myPlayer.ready
                       ? 'Bạn đã sẵn sàng. Chờ đối thủ bấm Sẵn sàng để bắt đầu.'
-                      : 'Cả hai người chơi cần bấm Sẵn sàng; cờ Trắng đi trước.'}
+                      : game === 'caro'
+                        ? 'Cả hai người chơi cần bấm Sẵn sàng; X đi trước.'
+                        : 'Cả hai người chơi cần bấm Sẵn sàng; cờ Trắng đi trước.'}
               </p>
             )}
             {roomData.status === 'finished' && (
@@ -577,6 +583,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                 gameState={roomData.gameState || {}}
                 canMove={roomData.status === 'playing'}
                 checkedKingIndex={checkedKingIndex}
+                winningLine={roomData.winningLine || []}
                 onMove={handleMove}
               />
               {game === 'go' && roomData.status === 'playing' && (
@@ -604,34 +611,19 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       )}
 
       {inviteOpen && (
-        <div className="board-game-modal-backdrop" onClick={() => setInviteOpen(false)}>
-          <div className="board-game-modal" onClick={(event) => event.stopPropagation()}>
-            <h3>Mời đạo hữu chơi {info.title}</h3>
-            {Object.entries(activeUsers)
-              .filter(([key, user]) => key !== username && user.currentScreen !== 'auth')
-              .map(([key, user]) => {
-                const inviteStatus = roomData?.inviteStatus?.[key];
-                const invitePending = roomData?.invitedUsers?.[key] &&
-                  (!inviteStatus || inviteStatus === 'pending');
-                const alreadyAccepted = inviteStatus === 'accepted';
-                return (
-                  <button
-                    type="button"
-                    key={key}
-                    disabled={Boolean(invitePending || alreadyAccepted)}
-                    onClick={() => handleInvite(key, user)}
-                  >
-                    {user.fullName || key} · {invitePending
-                      ? 'Đang mời'
-                      : alreadyAccepted
-                        ? 'Đã vào phòng'
-                        : user.currentScreen === 'TinhTamDien' ? 'Đang tịnh tâm' : 'Đang online'}
-                  </button>
-                );
-              })}
-            <button type="button" onClick={() => setInviteOpen(false)}>Đóng</button>
-          </div>
-        </div>
+        <GameInviteModal
+          activeUsers={activeUsers}
+          username={username}
+          gameName={info.title}
+          disabledUsers={Object.fromEntries(Object.entries(roomData?.invitedUsers || {})
+            .filter(([invitedUsername]) => {
+              const inviteStatus = roomData?.inviteStatus?.[invitedUsername];
+              return !inviteStatus || inviteStatus === 'pending' || inviteStatus === 'accepted';
+            })
+            .map(([invitedUsername]) => [invitedUsername, true]))}
+          onInviteUser={handleInvite}
+          onClose={() => setInviteOpen(false)}
+        />
       )}
       <FloatingCommunityChat currentUser={currentUser} />
 
@@ -669,11 +661,19 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-board-wrap { width: min(100%, 560px); text-align: center; }
         .board-game-board { display: grid; width: min(100%, 560px); aspect-ratio: 1; margin: 0 auto; overflow: hidden; border: 5px solid #6b472b; background: #d6aa66; box-shadow: 0 6px 18px #0008; }
         .board-game-board.chess { grid-template-columns: repeat(8, 1fr); border-color: #57391f; }
+        .board-game-board.caro { grid-template-columns: repeat(15, 1fr); gap: 1px; width: min(100%, 600px); border: 4px solid #6b472b; background: #6b472b; }
         .board-game-board.xiangqi, .board-game-board.go { grid-template-columns: repeat(9, 1fr); }
         .board-game-board.xiangqi { grid-template-rows: repeat(10, 1fr); aspect-ratio: 0.9; background: #edcc8f; }
         .board-game-board.go { background-color: #d6aa66; background-image: linear-gradient(#684927 1px, transparent 1px), linear-gradient(90deg, #684927 1px, transparent 1px); background-size: calc(100% / 9) calc(100% / 9); background-position: 5.555% 5.555%; border: 0; width: min(100%, 510px); padding: 0; }
         .board-game-cell { position: relative; display: flex; min-width: 0; min-height: 0; align-items: center; justify-content: center; padding: 0 !important; border-radius: 0 !important; background: #f0d9b5 !important; color: #111827; }
         .board-game-cell.dark-square { background: #b88959 !important; }
+        .board-game-cell.caro-cell { background: #1e293b !important; color: #111827; font-size: clamp(9px, 2.2vw, 22px); font-weight: 900; }
+        .board-game-cell.caro-winning-cell { background: #fbbf24 !important; animation: king-check-pulse .8s ease-in-out infinite alternate; }
+        .caro-symbol.X { color: #ef4444; }
+        .caro-symbol.O { color: #3b82f6; }
+        .caro-rule-box { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #e2e8f0; font-size: 12px; }
+        .caro-rule-box button { padding: 6px 9px; font-size: 11px; }
+        .caro-rule-box small { color: #7dd3fc; }
         .board-game-board.xiangqi .board-game-cell { background: transparent !important; border: 1px solid #8c6036; }
         .board-game-board.xiangqi .board-game-cell:nth-child(9n + 1) { border-left: 0; }
         .board-game-board.xiangqi .board-game-cell:nth-child(9n) { border-right: 0; }
@@ -714,9 +714,6 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-lobby h3 { color: #f7dfad; font-size: 14px; }
         .board-game-lobby-list { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
         .board-game-lobby-list span { padding: 6px 10px; border-radius: 20px; background: #334155; font-size: 12px; }
-        .board-game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: #0009; }
-        .board-game-modal { width: min(90vw, 360px); max-height: 75vh; overflow-y: auto; padding: 16px; border: 1px solid #475569; border-radius: 12px; background: #1e293b; display: flex; flex-direction: column; gap: 8px; }
-        .board-game-modal h3 { color: #ffcf70; margin: 0 0 6px; }
         @media (max-width: 640px) {
           .board-game-room { padding: 8px; }
           .board-game-header { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
@@ -725,6 +722,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
           .board-game-header-right { grid-column: 1 / -1; grid-row: 2; width: 100%; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
           .board-game-board-wrap { width: 100%; }
           .board-game-board.chess { width: min(100%, 460px); }
+          .board-game-board.caro { width: min(100%, 600px); }
           .board-game-board.xiangqi { width: min(100%, 420px); }
           .board-game-board.go { width: min(100%, 420px); }
           .board-game-chat { width: 100%; height: 300px; }

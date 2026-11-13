@@ -2,15 +2,17 @@ const CHESS_FILES = 8;
 const XIANGQI_ROWS = 10;
 const XIANGQI_COLS = 9;
 const GO_SIZE = 9;
+const CARO_SIZE = 15;
 
 const makeBoard = (rows, cols) => Array(rows * cols).fill('');
 const position = (row, col, cols) => row * cols + col;
 const inside = (row, col, rows, cols) => row >= 0 && row < rows && col >= 0 && col < cols;
 
-export const gameSizes = { chess: CHESS_FILES, xiangqi: XIANGQI_ROWS, go: GO_SIZE };
+export const gameSizes = { chess: CHESS_FILES, xiangqi: XIANGQI_ROWS, go: GO_SIZE, caro: CARO_SIZE };
 
 export function createInitialBoard(game) {
   if (game === 'go') return makeBoard(GO_SIZE, GO_SIZE);
+  if (game === 'caro') return makeBoard(CARO_SIZE, CARO_SIZE);
 
   if (game === 'chess') {
     const board = makeBoard(8, 8);
@@ -313,6 +315,9 @@ function xiangqiLegalMoves(board, from) {
 
 export function getLegalMoves(game, board, from, state = {}) {
   if (!board?.[from]) return [];
+  if (game === 'caro') {
+    return board.flatMap((cell, to) => cell ? [] : [{ from, to }]);
+  }
   if (game === 'chess') return chessLegalMoves(board, from, state.enPassant, state.castling);
   if (game === 'xiangqi') return xiangqiLegalMoves(board, from);
   return [];
@@ -415,6 +420,13 @@ export function scoreGo(board, komi = 6.5) {
 }
 
 export function applyBoardMove(game, board, move, state = {}) {
+  if (game === 'caro') {
+    if (board[move.to]) return { error: 'Ô này đã có quân.' };
+    const next = [...board];
+    next[move.to] = move.side;
+    return { board: next, state: { ...state, lastMove: move.to } };
+  }
+
   if (game === 'go') {
     const next = playGoStone(board, move.to, move.side, state.previousBoard);
     if (next.error) return next;
@@ -461,6 +473,40 @@ export function applyBoardMove(game, board, move, state = {}) {
 }
 
 export function getMoveResult(game, board, sideToMove, state = {}) {
+  if (game === 'caro') {
+    const lastMove = state.lastMove;
+    if (lastMove !== undefined) {
+      const symbol = board[lastMove];
+      const row = Math.floor(lastMove / CARO_SIZE);
+      const col = lastMove % CARO_SIZE;
+      const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+      for (const [rowStep, colStep] of directions) {
+        const line = [lastMove];
+        let beforeBlocked = false;
+        let afterBlocked = false;
+        for (const direction of [-1, 1]) {
+          let nextRow = row + rowStep * direction;
+          let nextCol = col + colStep * direction;
+          while (inside(nextRow, nextCol, CARO_SIZE, CARO_SIZE) &&
+            board[position(nextRow, nextCol, CARO_SIZE)] === symbol) {
+            line.push(position(nextRow, nextCol, CARO_SIZE));
+            nextRow += rowStep * direction;
+            nextCol += colStep * direction;
+          }
+          const blocked = !inside(nextRow, nextCol, CARO_SIZE, CARO_SIZE) ||
+            Boolean(board[position(nextRow, nextCol, CARO_SIZE)]);
+          if (direction === -1) beforeBlocked = blocked;
+          else afterBlocked = blocked;
+        }
+        if (line.length >= 5 && !(state.blockRule && beforeBlocked && afterBlocked)) {
+          return { winner: symbol, reason: `${symbol} thắng`, winningLine: line };
+        }
+      }
+    }
+    if (board.every(Boolean)) return { winner: 'draw', reason: 'Bàn cờ đã kín.' };
+    return null;
+  }
+
   if (game === 'go') {
     if ((state.passes || 0) < 2) return null;
     const score = scoreGo(board);
@@ -486,6 +532,7 @@ export function getMoveSide(game, piece) {
 }
 
 export function getGameSymbols(game) {
+  if (game === 'caro') return { X: 'X', O: 'O' };
   if (game === 'chess') {
     return { wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙', bK: '♚', bQ: '♛', bR: '♜', bB: '♝', bN: '♞', bP: '♟' };
   }
