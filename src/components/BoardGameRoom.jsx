@@ -103,7 +103,13 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   useEffect(() => {
     if (!username) return undefined;
     const lobbyRef = ref(db, `${basePath}/lobby/${username}`);
-    set(lobbyRef, { username, fullName, status: 'dang_doi' });
+    update(lobbyRef, {
+      username,
+      fullName,
+      status: initialRoomId ? 'dang_dau' : 'dang_doi',
+      roomId: initialRoomId || null,
+      matchedRoomId: initialRoomId || null
+    });
     const statsRef = ref(db, `users/${username}/${game}Stats`);
     const unsubscribe = onValue(statsRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -113,7 +119,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       remove(lobbyRef);
       unsubscribe();
     };
-  }, [basePath, game, fullName, username]);
+  }, [basePath, game, fullName, initialRoomId, username]);
 
   useEffect(() => {
     const lobbyRef = ref(db, `${basePath}/lobby`);
@@ -198,31 +204,39 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const handleInvite = async (targetUsername, targetUser) => {
     if (targetUser.currentScreen === 'TinhTamDien') {
       setNotice?.(`Đạo hữu ${targetUser.fullName || targetUsername} đang tịnh tâm, không thể quấy rầy!`);
-      setInviteOpen(false);
       return;
     }
-    const newRoomId = `room_${Date.now()}_${username}`;
-    await set(ref(db, `${basePath}/rooms/${newRoomId}`), {
-      players: { [username]: { fullName, symbol: getPlayerColor(game, 0), ready: false } },
-      board: createInitialBoard(game),
-      gameState: getInitialGameState(game),
-      turn: '',
-      status: 'waiting',
-      chat: {}
-    });
+    let targetRoomId = roomId;
+    if (!roomData || roomData.status !== 'waiting' || !myPlayer || playerKeys.length !== 1) {
+      targetRoomId = `room_${Date.now()}_${username}`;
+      await set(ref(db, `${basePath}/rooms/${targetRoomId}`), {
+        players: { [username]: { fullName, symbol: getPlayerColor(game, 0), ready: false } },
+        board: createInitialBoard(game),
+        gameState: getInitialGameState(game),
+        turn: '',
+        status: 'waiting',
+        chat: {},
+        invitedUsers: { [targetUsername]: true }
+      });
+      setActiveRoomId(targetRoomId);
+      setStatus('dang_dau');
+      await update(ref(db, `${basePath}/lobby/${username}`), {
+        status: 'dang_dau', roomId: targetRoomId, matchedRoomId: targetRoomId
+      });
+    } else {
+      await update(ref(db, `${basePath}/rooms/${targetRoomId}/invitedUsers`), {
+        [targetUsername]: true
+      });
+    }
+
     await set(ref(db, `board_game_invites/${targetUsername}`), {
       game,
-      roomId: newRoomId,
+      roomId: targetRoomId,
       fromUsername: username,
       fromFullName: fullName,
       timestamp: Date.now()
     });
-    await update(ref(db, `${basePath}/lobby/${username}`), {
-      status: 'dang_dau', roomId: newRoomId, matchedRoomId: newRoomId
-    });
-    setActiveRoomId(newRoomId);
-    setStatus('dang_dau');
-    setInviteOpen(false);
+    setNotice?.(`Đã gửi lời mời chơi ${info.title} cho ${targetUser.fullName || targetUsername}.`);
   };
 
   const handleToggleReady = async () => {
@@ -369,7 +383,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
           <span>{fullName} · Thắng {stats.wins} / Thua {stats.losses}</span>
         </div>
         <div className="board-game-actions">
-          {!roomId && status !== 'dang_tim_ghep' && (
+          {status !== 'dang_tim_ghep' && (!roomId || (roomData?.status === 'waiting' && myPlayer && playerKeys.length < 2)) && (
             <button type="button" onClick={() => setInviteOpen(true)}>✉️ Mời bạn</button>
           )}
           {!roomId && status !== 'dang_tim_ghep' && (
@@ -485,8 +499,15 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
             {Object.entries(activeUsers)
               .filter(([key, user]) => key !== username && user.currentScreen !== 'auth')
               .map(([key, user]) => (
-                <button type="button" key={key} onClick={() => handleInvite(key, user)}>
-                  {user.fullName || key} · {user.currentScreen === 'TinhTamDien' ? 'Đang tịnh tâm' : 'Đang online'}
+                <button
+                  type="button"
+                  key={key}
+                  disabled={Boolean(roomData?.invitedUsers?.[key])}
+                  onClick={() => handleInvite(key, user)}
+                >
+                  {user.fullName || key} · {roomData?.invitedUsers?.[key]
+                    ? 'Đã mời'
+                    : user.currentScreen === 'TinhTamDien' ? 'Đang tịnh tâm' : 'Đang online'}
                 </button>
               ))}
             <button type="button" onClick={() => setInviteOpen(false)}>Đóng</button>

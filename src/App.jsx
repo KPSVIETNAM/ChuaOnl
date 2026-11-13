@@ -11,7 +11,7 @@ const CoVua = lazy(() => import('./components/CoVua'));
 const CoTuong = lazy(() => import('./components/CoTuong'));
 const CoVay = lazy(() => import('./components/covay'));
 
-import { ref, onValue, remove, update, get } from 'firebase/database';
+import { ref, onValue, remove, update, get, runTransaction } from 'firebase/database';
 
 export default function App() {
   // Khởi tạo currentUser an toàn từ localStorage (có try...catch chống đơ)
@@ -89,21 +89,32 @@ export default function App() {
     try {
       const inviterSnap = await get(ref(db, `online_users/${fromUsername}`));
       const inviterScreen = inviterSnap.val()?.currentScreen || '';
+      const inviterLobbySnap = await get(ref(db, `board_games/${game}/lobby/${fromUsername}`));
+      const inviterLobby = inviterLobbySnap.val();
       const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
       const roomSnap = await get(roomRef);
       const roomData = roomSnap.val();
-      if (!inviterScreen.startsWith(gameInfo.screen) || !roomData || roomData.status !== 'waiting') {
-        alert('Lời mời đã hết hạn hoặc người mời không còn ở phòng chờ.');
+      const invitedRoomIsCurrent = inviterLobby?.roomId === roomId &&
+        inviterLobby?.matchedRoomId === roomId &&
+        inviterLobby?.status === 'dang_dau';
+      if (!inviterScreen.startsWith(gameInfo.screen) || !invitedRoomIsCurrent ||
+          !roomData || roomData.status !== 'waiting' ||
+          !roomData.players?.[fromUsername] || Object.keys(roomData.players || {}).length !== 1) {
+        alert('Lời mời đã quá hạn: người mời đã vào trận khác hoặc phòng đã đủ người.');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
       }
 
-      const players = roomData.players || {};
-      if (!players[currentUser.username] && Object.keys(players).length < 2) {
-        const playerKeys = Object.keys(players);
-        const symbol = gameInfo.colors[playerKeys.length];
-        await update(roomRef, {
+      const joinedRoom = await runTransaction(roomRef, (currentRoom) => {
+        const players = currentRoom?.players || {};
+        if (currentRoom?.status !== 'waiting' || !players[fromUsername] ||
+            Object.keys(players).length !== 1 || players[currentUser.username]) {
+          return;
+        }
+        const symbol = gameInfo.colors[Object.keys(players).length];
+        return {
+          ...currentRoom,
           players: {
             ...players,
             [currentUser.username]: {
@@ -112,8 +123,16 @@ export default function App() {
               ready: false
             }
           }
-        });
+        };
+      }, { applyLocally: false });
+
+      if (!joinedRoom.committed) {
+        alert('Lời mời đã quá hạn: người mời đã vào trận khác hoặc phòng đã đủ người.');
+        await remove(ref(db, `board_game_invites/${currentUser.username}`));
+        setBoardGameInvite(null);
+        return;
       }
+
       await update(ref(db, `board_games/${game}/lobby/${currentUser.username}`), {
         username: currentUser.username,
         fullName: currentUser.fullName || currentUser.username,
