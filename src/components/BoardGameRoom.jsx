@@ -128,9 +128,12 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       const players = snapshot.val() || {};
       setLobby(players);
       const myEntry = players[username];
+      if (myEntry?.matchedRoomId === roomId && myEntry.status) {
+        setStatus(myEntry.status);
+      }
       if (myEntry?.matchedRoomId && myEntry.matchedRoomId !== roomId) {
         setActiveRoomId(myEntry.matchedRoomId);
-        setStatus('dang_dau');
+        setStatus(myEntry.status || 'dang_doi');
       }
 
       if (myEntry?.status !== 'dang_tim_ghep' || roomId) return;
@@ -221,9 +224,9 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         inviteStatus: { [targetUsername]: 'pending' }
       });
       setActiveRoomId(targetRoomId);
-      setStatus('dang_dau');
+      setStatus('dang_doi');
       await update(ref(db, `${basePath}/lobby/${username}`), {
-        status: 'dang_dau', roomId: targetRoomId, matchedRoomId: targetRoomId
+        status: 'dang_doi', roomId: targetRoomId, matchedRoomId: targetRoomId
       });
     } else {
       await update(ref(db, `${basePath}/rooms/${targetRoomId}`), {
@@ -233,7 +236,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
     }
 
     await update(ref(db, `${basePath}/lobby/${username}`), {
-      status: 'dang_dau',
+      status: 'dang_doi',
       roomId: targetRoomId,
       matchedRoomId: targetRoomId
     });

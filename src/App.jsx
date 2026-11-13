@@ -141,12 +141,15 @@ export default function App() {
       }
 
       await revokePendingGameInvites(game, roomId, joinedRoom.snapshot.val());
-      await update(ref(db, `board_games/${game}/lobby/${currentUser.username}`), {
-        username: currentUser.username,
-        fullName: currentUser.fullName || currentUser.username,
-        status: 'dang_dau',
-        roomId,
-        matchedRoomId: roomId
+      await update(ref(db), {
+        [`board_games/${game}/lobby/${currentUser.username}`]: {
+          username: currentUser.username,
+          fullName: currentUser.fullName || currentUser.username,
+          status: 'dang_dau',
+          roomId,
+          matchedRoomId: roomId
+        },
+        [`board_games/${game}/lobby/${fromUsername}/status`]: 'dang_dau'
       });
       await remove(ref(db, `board_game_invites/${currentUser.username}`));
       setBoardGameInvite(null);
