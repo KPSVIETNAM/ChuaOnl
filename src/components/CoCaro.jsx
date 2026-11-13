@@ -497,12 +497,16 @@ const handleLeaveRoom = async () => {
 
         {Object.keys(players).length === 2 && (
           <div className="rule-box">
-            <div className="rule-summary">
-              <span className="rule-tooltip" role="tooltip">
-                  Khi bật, chuỗi 5 quân bị chặn ở cả hai đầu sẽ không được tính thắng. Đổi luật cần cả hai người chơi đồng ý.
-                </span>
+            <div
+              className="rule-summary"
+              tabIndex={0}
+              aria-describedby="caro-rule-tooltip"
+            >
+              <span id="caro-rule-tooltip" className="rule-tooltip" role="tooltip">
+                Khi bật, chuỗi 5 quân bị chặn ở cả hai đầu sẽ không được tính thắng. Đổi luật cần cả hai người chơi đồng ý.
+              </span>
               <span className="rule-name">Chặn hai đầu</span>
-              <span className={`rule-state ${blockRule ? 'enabled' : ''}`}>{blockRule ? 'BẬT' : 'TẮT'}</span> 
+              <span className={`rule-state ${blockRule ? 'enabled' : ''}`}>{blockRule ? 'BẬT' : 'TẮT'}</span>
             </div>
             <button
               onClick={handleToggleRuleRequest}
@@ -618,13 +622,13 @@ const handleLeaveRoom = async () => {
         .ready-btn.is-ready { background: #dc2626; }
         
         .rule-box { position: relative; display: flex; align-items: center; gap: 7px; padding: 5px 7px; background: #1e293b; border: 1px solid #3b475b; border-radius: 8px; text-align: left; }
-        .rule-summary { display: flex; align-items: center; gap: 5px; }
+        .rule-summary { position: relative; display: flex; align-items: center; gap: 5px; cursor: help; outline: none; }
+        .rule-summary:focus-visible { border-radius: 4px; box-shadow: 0 0 0 2px #38bdf8; }
         .rule-name { color: #e2e8f0; font-size: 10px; font-weight: 700; white-space: nowrap; }
         .rule-state { padding: 2px 5px; color: #a7f3d0; background: #064e3b; border-radius: 4px; font-size: 9px; font-weight: 800; }
         .rule-state.enabled { color: #fecaca; background: #7f1d1d; }
-        .rule-help { position: relative; display: inline-flex; width: 15px; height: 15px; align-items: center; justify-content: center; border: 1px solid #64748b; border-radius: 50%; color: #cbd5e1; font-size: 10px; font-weight: 700; cursor: help; }
         .rule-tooltip { position: absolute; z-index: 20; left: 50%; bottom: calc(100% + 8px); width: 230px; padding: 9px 10px; border: 1px solid #475569; border-radius: 7px; background: #0f172a; box-shadow: 0 6px 18px #0008; color: #e2e8f0; font-size: 11px; font-weight: 400; line-height: 1.45; text-align: left; opacity: 0; visibility: hidden; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease, visibility .15s; pointer-events: none; }
-        .rule-help:hover .rule-tooltip, .rule-help:focus .rule-tooltip { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+        .rule-summary:hover .rule-tooltip, .rule-summary:focus .rule-tooltip { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
         .rule-btn { padding: 4px 7px; background: #475569; color: #fff; border: none; border-radius: 5px; font-size: 9px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .rule-btn.active { background: #047857; }
         .rule-btn.opponent-request { background: #2563eb; }
