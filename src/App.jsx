@@ -141,8 +141,8 @@ export default function App() {
       let transactionAbortReason;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const roomSnapshot = await get(roomRef);
-        const roomData = roomSnapshot.val();
-        transactionAbortReason = getJoinRejectionReason(roomData);
+        const currentRoom = roomSnapshot.val();
+        transactionAbortReason = getJoinRejectionReason(currentRoom);
         if (transactionAbortReason) break;
 
         joinedRoom = await runTransaction(roomRef, (currentRoom) => {
