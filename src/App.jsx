@@ -153,17 +153,25 @@ export default function App() {
       }
 
       if (!joinedRoom?.committed) {
-        transactionAbortReason ||= 'Không thể xác nhận trạng thái phòng.';
+        const latestRoom = (await get(roomRef)).val();
+        const latestRoomRejection = getJoinRejectionReason(latestRoom);
+        const transactionSnapshot = joinedRoom?.snapshot?.val();
+        transactionAbortReason = latestRoomRejection ||
+          'Firebase không xác nhận giao dịch dù phòng vẫn hợp lệ; kiểm tra quyền ghi Realtime Database hoặc lỗi transaction trong console.';
         console.warn('Không thể chấp nhận lời mời cờ:', {
           game,
           roomId,
           fromUsername,
           invitedUsername: currentUser.username,
-          reason: transactionAbortReason
+          reason: transactionAbortReason,
+          roomAtTransactionEnd: transactionSnapshot,
+          latestRoom
         });
-        alert(`Không thể vào phòng: ${transactionAbortReason}`);
-        await remove(ref(db, `board_game_invites/${currentUser.username}`));
-        setBoardGameInvite(null);
+        alert(`Không thể vào phòng ${roomId}: ${transactionAbortReason}`);
+        if (latestRoomRejection) {
+          await remove(ref(db, `board_game_invites/${currentUser.username}`));
+          setBoardGameInvite(null);
+        }
         return;
       }
 
