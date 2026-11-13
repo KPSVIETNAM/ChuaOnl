@@ -150,11 +150,17 @@ export default function CoCaro({ currentUser, activeUsers = {}, setNotice, onBac
         const playerKeys = Object.keys(data.players);
         if (playerKeys.length === 2) {
           const opponentKey = playerKeys.find(k => k !== username);
-          if (opponentKey && activeUsers && !activeUsers[opponentKey]) {
-            update(roomRef, {
-              status: 'cancelled',
-              winner: 'Hủy trận',
-              winReason: 'Đối phương đã rời trận. Ván đấu được hủy, không tính điểm.'
+          const opponentScreen = activeUsers?.[opponentKey]?.currentScreen || '';
+          const opponentIsInCaro = opponentScreen === 'caro' || opponentScreen.startsWith('CoCaro');
+          if (opponentKey && !opponentIsInCaro) {
+            runTransaction(roomRef, (currentRoom) => {
+              if (!currentRoom || currentRoom.status !== 'playing') return;
+              return {
+                ...currentRoom,
+                status: 'cancelled',
+                winner: 'Hủy trận',
+                winReason: `${data.players[opponentKey]?.fullName || opponentKey} đã rời phòng Caro. Ván đấu bị hủy, không tính điểm.`
+              };
             });
             setMyStatus('dang_doi');
             update(ref(db, `caro_lobby/${username}`), { status: 'dang_doi', matchedRoomId: null });
