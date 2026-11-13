@@ -584,7 +584,7 @@ export default function App() {
     const roomId = currentScreen.startsWith(`${prefix}_`) ? currentScreen.slice(prefix.length + 1) : null;
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
-        {renderHeader(false)}
+        {renderHeader()}
         <Suspense fallback={<div style={{ color: '#fff', padding: '20px' }}>Đang mở Kỳ Viện...</div>}>
           <Component
             currentUser={currentUser}

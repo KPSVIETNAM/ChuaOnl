@@ -415,21 +415,20 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   return (
     <section className="board-game-room">
       <header className="board-game-header">
-        <div>
-          <h2>{info.icon} Kỳ Viện {info.title}</h2>
+        <div className="board-game-header-spacer" aria-hidden="true" />
+        <h2>{info.icon} KỲ VIỆN {info.title.toLocaleUpperCase('vi-VN')}</h2>
+        <div className="board-game-header-right">
           <span>{fullName} · Thắng {stats.wins} / Thua {stats.losses}</span>
-        </div>
-        <div className="board-game-actions">
-          {status !== 'dang_tim_ghep' && (!roomId || (roomData?.status === 'waiting' && myPlayer && playerKeys.length < 2)) && (
-            <button type="button" onClick={() => setInviteOpen(true)}>✉️ Mời bạn</button>
-          )}
-          {!roomId && status !== 'dang_tim_ghep' && (
-            <button type="button" className="primary" onClick={handleRandomMatch}>🎲 Ghép ngẫu nhiên</button>
-          )}
-          {status === 'dang_tim_ghep' && <button type="button" className="danger" onClick={handleCancelMatch}>Hủy tìm trận</button>}
-          {roomId
-            ? <button type="button" onClick={handleLeaveRoom}>← Rời phòng</button>
-            : <button type="button" onClick={onBack}>Cổng Tam Quan</button>}
+          <div className="board-game-actions">
+            {status !== 'dang_tim_ghep' && (!roomId || (roomData?.status === 'waiting' && myPlayer && playerKeys.length < 2)) && (
+              <button type="button" onClick={() => setInviteOpen(true)}>✉️ Mời bạn</button>
+            )}
+            {!roomId && status !== 'dang_tim_ghep' && (
+              <button type="button" className="primary" onClick={handleRandomMatch}>🎲 Ghép ngẫu nhiên</button>
+            )}
+            {status === 'dang_tim_ghep' && <button type="button" className="danger" onClick={handleCancelMatch}>Hủy tìm trận</button>}
+            {roomId && <button type="button" onClick={handleLeaveRoom}>← Rời phòng</button>}
+          </div>
         </div>
       </header>
 
@@ -585,9 +584,12 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       <style>{`
         .board-game-room { max-width: 1100px; margin: 0 auto; padding: 14px; border-radius: 14px; background: #171d2b; color: #f8fafc; }
         .board-game-header, .board-game-actions, .board-game-status, .game-players { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-        .board-game-header { margin-bottom: 12px; }
-        .board-game-header h2 { margin: 0 0 4px; color: #ffcf70; font-size: 20px; }
-        .board-game-header span, .board-game-lobby p { color: #cbd5e1; font-size: 13px; }
+        .board-game-header { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); margin-bottom: 12px; }
+        .board-game-header-spacer { min-width: 0; }
+        .board-game-header h2 { grid-column: 2; grid-row: 1; align-self: center; margin: 0; color: #ffcf70; font-size: 20px; text-align: center; white-space: nowrap; }
+        .board-game-header-right { grid-column: 3; grid-row: 1; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .board-game-header-right > span, .board-game-lobby p { color: #cbd5e1; font-size: 13px; }
+        .board-game-actions { justify-content: flex-end; }
         .board-game-room button { border: 0; border-radius: 7px; padding: 8px 12px; background: #334155; color: white; font-weight: 700; cursor: pointer; }
         .board-game-room button:disabled { cursor: default; }
         .board-game-room button.primary { background: #047857; }
@@ -660,6 +662,10 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-modal h3 { color: #ffcf70; margin: 0 0 6px; }
         @media (max-width: 640px) {
           .board-game-room { padding: 8px; }
+          .board-game-header { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+          .board-game-header h2 { grid-column: 1 / -1; grid-row: 1; white-space: normal; }
+          .board-game-header-spacer { display: none; }
+          .board-game-header-right { grid-column: 1 / -1; grid-row: 2; width: 100%; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
           .board-game-board-wrap { width: 100%; }
           .board-game-board.chess { width: min(100%, 460px); }
           .board-game-board.xiangqi { width: min(100%, 420px); }
