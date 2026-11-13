@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { onValue, push, ref, remove, runTransaction, set, update } from 'firebase/database';
 import { db } from '../firebase';
 import { revokePendingGameInvites } from './boardGameInvites';
+import FloatingCommunityChat from './FloatingCommunityChat';
 import {
   applyBoardMove,
   createInitialBoard,
@@ -100,8 +101,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const [status, setStatus] = useState('dang_doi');
   const [stats, setStats] = useState({ wins: 0, losses: 0 });
   const [chatText, setChatText] = useState('');
+  const [commonChatMessages, setCommonChatMessages] = useState([]);
+  const [commonChatText, setCommonChatText] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const chatRef = useRef(null);
+  const commonChatRef = useRef(null);
   const lastCheckSoundRef = useRef(null);
 
   useEffect(() => {
@@ -177,8 +181,20 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   }, [basePath, roomId]);
 
   useEffect(() => {
+    if (roomId) return undefined;
+    return onValue(ref(db, 'board_games/common_chat'), (snapshot) => {
+      const data = snapshot.val() || {};
+      setCommonChatMessages(Object.entries(data).map(([id, message]) => ({ id, ...message })).slice(-40));
+    }, (error) => console.error('Lỗi đọc chat chung Kỳ Viện:', error));
+  }, [roomId]);
+
+  useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [roomData?.chat]);
+
+  useEffect(() => {
+    if (commonChatRef.current) commonChatRef.current.scrollTop = commonChatRef.current.scrollHeight;
+  }, [commonChatMessages]);
 
   const players = roomData?.players || {};
   const playerKeys = Object.keys(players);
@@ -409,6 +425,25 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
     setChatText('');
   };
 
+  const sendCommonChat = async (event) => {
+    event.preventDefault();
+    const text = commonChatText.trim();
+    if (!text || !username) return;
+    try {
+      await push(ref(db, 'board_games/common_chat'), {
+        username,
+        sender: fullName,
+        text: text.slice(0, 300),
+        timestamp: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      setCommonChatText('');
+    } catch (error) {
+      console.error('Lỗi gửi chat chung Kỳ Viện:', error);
+      setNotice?.('Không gửi được tin nhắn. Vui lòng thử lại.');
+    }
+  };
+
   const moveTurn = roomData?.players?.[roomData.turn]?.fullName || 'Đang chờ';
   const score = game === 'go' ? (roomData?.status === 'finished' ? ` • ${roomData.resultReason}` : ` • Đã bắt ${roomData?.gameState?.captured || 0} quân`) : '';
 
@@ -433,14 +468,32 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       </header>
 
       {!roomId ? (
-        <div className="board-game-lobby">
-          <p>{status === 'dang_tim_ghep' ? 'Đang tìm đối thủ...' : 'Chọn ghép ngẫu nhiên hoặc mời đạo hữu để bắt đầu.'}</p>
-          <h3>Đạo hữu đang ở Kỳ Viện</h3>
-          <div className="board-game-lobby-list">
-            {Object.entries(lobby).filter(([key]) => key !== username).map(([key, player]) => (
-              <span key={key}>{player.fullName || key} · {player.status === 'dang_tim_ghep' ? 'Đang tìm trận' : 'Đang chờ'}</span>
-            ))}
+        <div className="board-game-lobby-layout">
+          <div className="board-game-lobby">
+            <p>{status === 'dang_tim_ghep' ? 'Đang tìm đối thủ...' : 'Chọn ghép ngẫu nhiên hoặc mời đạo hữu để bắt đầu.'}</p>
+            <h3>Đạo hữu đang ở Kỳ Viện</h3>
+            <div className="board-game-lobby-list">
+              {Object.entries(lobby).filter(([key]) => key !== username).map(([key, player]) => (
+                <span key={key}>{player.fullName || key} · {player.status === 'dang_tim_ghep' ? 'Đang tìm trận' : 'Đang chờ'}</span>
+              ))}
+            </div>
           </div>
+          <aside className="board-game-chat board-game-common-chat">
+            <h3>💬 Chat chung Kỳ Viện</h3>
+            <div className="board-game-messages" ref={commonChatRef}>
+              {commonChatMessages.length === 0 ? (
+                <p className="empty-chat">Chưa có tin nhắn.</p>
+              ) : commonChatMessages.map((message) => (
+                <div key={message.id} className={`board-game-message ${message.username === username ? 'mine' : ''}`}>
+                  <b>{message.sender}</b><small>{message.time}</small><p>{message.text}</p>
+                </div>
+              ))}
+            </div>
+            <form onSubmit={sendCommonChat}>
+              <input value={commonChatText} onChange={(event) => setCommonChatText(event.target.value)} maxLength={300} placeholder="Nhập tin nhắn..." />
+              <button type="submit" disabled={!username}>Gửi</button>
+            </form>
+          </aside>
         </div>
       ) : !roomData ? (
         <div className="board-game-lobby"><p>Đang kết nối phòng chơi...</p></div>
@@ -580,6 +633,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
           </div>
         </div>
       )}
+      <FloatingCommunityChat currentUser={currentUser} />
 
       <style>{`
         .board-game-room { max-width: 1100px; margin: 0 auto; padding: 14px; border-radius: 14px; background: #171d2b; color: #f8fafc; }
@@ -589,6 +643,9 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-header h2 { grid-column: 2; grid-row: 1; align-self: center; margin: 0; color: #ffcf70; font-size: 20px; text-align: center; white-space: nowrap; }
         .board-game-header-right { grid-column: 3; grid-row: 1; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
         .board-game-header-right > span, .board-game-lobby p { color: #cbd5e1; font-size: 13px; }
+        .board-game-lobby-layout { display: flex; align-items: stretch; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .board-game-lobby-layout .board-game-lobby { flex: 1 1 420px; }
+        .board-game-common-chat { width: min(100%, 340px) !important; height: 360px !important; }
         .board-game-actions { justify-content: flex-end; }
         .board-game-room button { border: 0; border-radius: 7px; padding: 8px 12px; background: #334155; color: white; font-weight: 700; cursor: pointer; }
         .board-game-room button:disabled { cursor: default; }
@@ -672,6 +729,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
           .board-game-board.go { width: min(100%, 420px); }
           .board-game-chat { width: 100%; height: 300px; }
           .board-game-actions { justify-content: flex-start; }
+          .board-game-lobby-layout .board-game-lobby, .board-game-common-chat { flex-basis: 100%; }
         }
       `}</style>
     </section>
