@@ -457,26 +457,28 @@ const handleLeaveRoom = async () => {
   return (
     <div className="caro-container">
       <div className="caro-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {roomId && roomId !== 'phong_chung' && (
-          <button onClick={handleLeaveRoom} className="leave-room-btn">
-            🚪 Thoát trận
-          </button>
-        )}
-        <h2 style={{ color: '#ffb703', margin: 0 }}>⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
-      </div>
-        
-        <div className="my-stats-badge">
-          🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
+        <div className="caro-header-left">
+          {roomId && roomId !== 'phong_chung' && (
+            <button onClick={handleLeaveRoom} className="leave-room-btn">
+              🚪 Thoát trận
+            </button>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}> 
-          {myStatus === 'dang_tim_ghep' ? (
-            <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
-          ) : (
-            <button onClick={handleRandomMatch} className="random-match-btn">🎲 Ghép Ngẫu Nhiên</button>
-          )}
-          <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời</button>
+        <h2 className="caro-page-title">⚔️ KỲ VIỆN CỜ CARO ⚔️</h2>
+
+        <div className="caro-header-right">
+          <div className="my-stats-badge">
+            🏆 Thắng: <b>{myStats.wins}</b> | Tỷ lệ: <b style={{ color: '#38bdf8' }}>{myStats.winRate}%</b>
+          </div>
+          <div className="caro-header-actions">
+            {myStatus === 'dang_tim_ghep' ? (
+              <button onClick={handleCancelMatch} className="cancel-match-btn">Hủy tìm ghép</button>
+            ) : (
+              <button onClick={handleRandomMatch} className="random-match-btn">🎲 Ghép Ngẫu Nhiên</button>
+            )}
+            <button onClick={() => setShowInviteModal(true)} className="invite-btn">✉️ Mời</button>
+          </div>
         </div>
       </div>
  
@@ -585,7 +587,11 @@ const handleLeaveRoom = async () => {
 
       <style>{`
         .caro-container { max-width: 1000px; margin: 0 auto; padding: 15px; background: #171d2b; border-radius: 16px; color: #fff; text-align: center; }
-        .caro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .caro-header { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; margin-bottom: 10px; gap: 8px; }
+        .caro-header-left { justify-self: start; }
+        .caro-page-title { grid-column: 2; grid-row: 1; color: #ffb703; margin: 0; white-space: nowrap; text-align: center; }
+        .caro-header-right { grid-column: 3; grid-row: 1; justify-self: end; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+        .caro-header-actions { display: flex; gap: 8px; }
         .my-stats-badge { background: #1e293b; padding: 5px 10px; border-radius: 20px; font-size: 11px; border: 1px solid #334155; color: #f7dfad; }
         .invite-btn { padding: 6px 12px; background: #b45309; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
         .random-match-btn { padding: 6px 12px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; }
@@ -638,6 +644,13 @@ const handleLeaveRoom = async () => {
         .caro-chat-form { display: flex; padding: 6px; background: #171f2d; border-top: 1px solid #334155; gap: 6px; }
         .caro-chat-form input { flex: 1; padding: 5px 8px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 11px; outline: none; }
         .caro-chat-form button { padding: 5px 10px; background: #b45309; color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; }
+
+        @media (max-width: 760px) {
+          .caro-header { grid-template-columns: 1fr auto; }
+          .caro-page-title { grid-column: 1 / -1; grid-row: 1; }
+          .caro-header-left { grid-column: 1; grid-row: 2; }
+          .caro-header-right { grid-column: 2; grid-row: 2; flex-wrap: wrap; }
+        }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: #1e293b; padding: 18px; border-radius: 12px; width: 90%; max-width: 380px; text-align: left; }
