@@ -89,24 +89,21 @@ export default function App() {
 
     try {
       const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
-      const roomSnapshot = await get(roomRef);
-      if (!roomSnapshot.exists()) {
-        alert('Lời mời đã quá hạn 1');
-        await remove(ref(db, `board_game_invites/${currentUser.username}`));
-        setBoardGameInvite(null);
-        return;
-      }
-
-      // Load the room before the transaction so its first update sees the current database value.
-      const joinedRoom = await runTransaction(roomRef, (currentRoom) => {
+      const getJoinRejectionReason = (currentRoom) => {
+        if (!currentRoom) return 'Phòng không còn tồn tại.';
         const players = currentRoom?.players || {};
         const inviteStatus = currentRoom?.inviteStatus?.[currentUser.username];
-        if (currentRoom?.status !== 'waiting' || !players[fromUsername] ||
-            Object.keys(players).length !== 1 || players[currentUser.username] ||
-            !currentRoom.invitedUsers?.[currentUser.username] ||
-            (inviteStatus && inviteStatus !== 'pending')) {
-          return;
-        }
+        if (currentRoom.status !== 'waiting') return `Trạng thái phòng là "${currentRoom.status}".`;
+        if (!players[fromUsername]) return 'Không tìm thấy người mời trong phòng.';
+        if (Object.keys(players).length !== 1) return `Phòng hiện có ${Object.keys(players).length} người chơi.`;
+        if (players[currentUser.username]) return 'Tài khoản của bạn đã có trong phòng.';
+        if (!currentRoom.invitedUsers?.[currentUser.username]) return 'Tài khoản của bạn không có trong danh sách được mời.';
+        if (inviteStatus && inviteStatus !== 'pending') return `Trạng thái lời mời là "${inviteStatus}".`;
+        return null;
+      };
+
+      const buildJoinedRoom = (currentRoom) => {
+        const players = currentRoom.players || {};
         const symbol = gameInfo.colors[Object.keys(players).length];
         const updatedInviteStatus = { ...(currentRoom.inviteStatus || {}), [currentUser.username]: 'accepted' };
         Object.keys(currentRoom.invitedUsers || {}).forEach((invitedUsername) => {
@@ -132,27 +129,31 @@ export default function App() {
           winner: null,
           resultReason: null
         };
-      }, { applyLocally: false });
+      };
 
-      if (!joinedRoom.committed) {
+      let joinedRoom;
+      let transactionAbortReason;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const roomSnapshot = await get(roomRef);
+        const roomData = roomSnapshot.val();
+        transactionAbortReason = getJoinRejectionReason(roomData);
+        if (transactionAbortReason) break;
+
+        joinedRoom = await runTransaction(roomRef, (currentRoom) => {
+          if (getJoinRejectionReason(currentRoom)) return;
+          return buildJoinedRoom(currentRoom);
+        }, { applyLocally: false });
+
+        if (joinedRoom.committed) break;
+
         const latestRoom = (await get(roomRef)).val();
-        const latestPlayers = latestRoom?.players || {};
-        const latestInviteStatus = latestRoom?.inviteStatus?.[currentUser.username];
-        const transactionAbortReason = !latestRoom
-          ? 'Phòng không còn tồn tại.'
-          : latestRoom.status !== 'waiting'
-            ? `Trạng thái phòng là "${latestRoom.status}".`
-            : !latestPlayers[fromUsername]
-              ? 'Không tìm thấy người mời trong phòng.'
-              : Object.keys(latestPlayers).length !== 1
-                ? `Phòng hiện có ${Object.keys(latestPlayers).length} người chơi.`
-                : latestPlayers[currentUser.username]
-                  ? 'Tài khoản của bạn đã có trong phòng.'
-                  : !latestRoom.invitedUsers?.[currentUser.username]
-                    ? 'Tài khoản của bạn không có trong danh sách được mời.'
-                    : latestInviteStatus && latestInviteStatus !== 'pending'
-                      ? `Trạng thái lời mời là "${latestInviteStatus}".`
-                      : 'Phòng thay đổi trong lúc xử lý.';
+        transactionAbortReason = getJoinRejectionReason(latestRoom);
+        if (transactionAbortReason) break;
+        transactionAbortReason = 'Giao dịch chưa hoàn tất, đang thử lại.';
+      }
+
+      if (!joinedRoom?.committed) {
+        transactionAbortReason ||= 'Không thể xác nhận trạng thái phòng.';
         console.warn('Không thể chấp nhận lời mời cờ:', {
           game,
           roomId,
