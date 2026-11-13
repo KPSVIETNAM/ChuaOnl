@@ -532,18 +532,26 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
             <h3>Mời đạo hữu chơi {info.title}</h3>
             {Object.entries(activeUsers)
               .filter(([key, user]) => key !== username && user.currentScreen !== 'auth')
-              .map(([key, user]) => (
-                <button
-                  type="button"
-                  key={key}
-                  disabled={Boolean(roomData?.invitedUsers?.[key])}
-                  onClick={() => handleInvite(key, user)}
-                >
-                  {user.fullName || key} · {roomData?.invitedUsers?.[key]
-                    ? 'Đã mời'
-                    : user.currentScreen === 'TinhTamDien' ? 'Đang tịnh tâm' : 'Đang online'}
-                </button>
-              ))}
+              .map(([key, user]) => {
+                const inviteStatus = roomData?.inviteStatus?.[key];
+                const invitePending = roomData?.invitedUsers?.[key] &&
+                  (!inviteStatus || inviteStatus === 'pending');
+                const alreadyAccepted = inviteStatus === 'accepted';
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    disabled={Boolean(invitePending || alreadyAccepted)}
+                    onClick={() => handleInvite(key, user)}
+                  >
+                    {user.fullName || key} · {invitePending
+                      ? 'Đang mời'
+                      : alreadyAccepted
+                        ? 'Đã vào phòng'
+                        : user.currentScreen === 'TinhTamDien' ? 'Đang tịnh tâm' : 'Đang online'}
+                  </button>
+                );
+              })}
             <button type="button" onClick={() => setInviteOpen(false)}>Đóng</button>
           </div>
         </div>
