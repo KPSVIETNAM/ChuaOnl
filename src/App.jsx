@@ -88,27 +88,16 @@ export default function App() {
     }
 
     try {
-      const inviterSnap = await get(ref(db, `online_users/${fromUsername}`));
-      const inviterScreen = inviterSnap.val()?.currentScreen || '';
-      const inviterLobbySnap = await get(ref(db, `board_games/${game}/lobby/${fromUsername}`));
-      const inviterLobby = inviterLobbySnap.val();
       const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
-      const roomSnap = await get(roomRef);
-      const roomData = roomSnap.val();
-      const invitedRoomIsCurrent = inviterLobby?.roomId === roomId &&
-        inviterLobby?.matchedRoomId === roomId &&
-        inviterLobby?.status === 'dang_dau';
-      if (!inviterScreen.startsWith(gameInfo.screen) || !invitedRoomIsCurrent ||
-          !roomData || roomData.status !== 'waiting' ||
-          !roomData.players?.[fromUsername] || Object.keys(roomData.players || {}).length !== 1 ||
-          !roomData.invitedUsers?.[currentUser.username] ||
-          roomData.inviteStatus?.[currentUser.username] !== 'pending') {
+      const roomSnapshot = await get(roomRef);
+      if (!roomSnapshot.exists()) {
         alert('Lời mời đã quá hạn');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
       }
 
+      // Load the room before the transaction so its first update sees the current database value.
       const joinedRoom = await runTransaction(roomRef, (currentRoom) => {
         const players = currentRoom?.players || {};
         if (currentRoom?.status !== 'waiting' || !players[fromUsername] ||
