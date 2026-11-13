@@ -87,7 +87,7 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
 
       </div>
 
-      <div style={styles.gameSelector}>
+      <div style={styles.gameSelector} aria-label="Chọn trò chơi cờ">
         {[
           { screen: 'CoCaro', icon: '❌', title: 'Cờ Caro' },
           { screen: 'CoVua', icon: '♟️', title: 'Cờ vua' },
@@ -99,15 +99,14 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
             key={game.screen}
             style={{
               ...styles.gameWidget,
-              transform: hoveredGate === game.screen ? 'translateY(-5px)' : 'translateY(0)',
-              borderColor: hoveredGate === game.screen ? '#ffb703' : 'rgba(255, 183, 3, 0.4)',
-              backgroundColor: hoveredGate === game.screen ? 'rgba(30, 41, 59, 0.97)' : 'rgba(15, 23, 42, 0.82)'
+              backgroundColor: hoveredGate === game.screen ? 'rgba(120, 83, 35, 0.9)' : 'rgba(15, 23, 42, 0.72)',
+              color: hoveredGate === game.screen ? '#fff1c2' : '#e5d7b8'
             }}
             onMouseEnter={() => setHoveredGate(game.screen)}
             onMouseLeave={() => setHoveredGate(null)}
             onClick={() => onNavigate(game.screen)}
           >
-            <span style={styles.gameIcon}>{game.icon}</span>
+            <span style={{ ...styles.gameIcon, opacity: hoveredGate === game.screen ? 0.88 : 0.68 }}>{game.icon}</span>
             <span style={styles.gameTitle}>{game.title}</span>
           </button>
         ))}
@@ -196,37 +195,47 @@ const styles = {
   },
   gameSelector: {
     position: 'absolute',
-    bottom: '28px',
+    bottom: '22px',
     left: '50%',
     transform: 'translateX(-50%)',
     zIndex: 10,
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '10px',
-    width: 'min(94%, 850px)'
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
+    width: 'min(76vw, 270px)',
+    aspectRatio: '1',
+    overflow: 'hidden',
+    borderRadius: '50%',
+    border: '2px solid rgba(255, 183, 3, 0.58)',
+    boxShadow: '0 5px 22px rgba(0,0,0,0.68), inset 0 0 18px rgba(255,183,3,0.12)',
+    background: 'rgba(15, 23, 42, 0.78)',
+    backdropFilter: 'blur(8px)'
   },
   gameWidget: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '9px',
-    flex: '1 1 145px',
-    minHeight: '58px',
-    padding: '9px 13px',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 183, 3, 0.4)',
-    backdropFilter: 'blur(8px)',
+    gap: '4px',
+    minWidth: 0,
+    minHeight: 0,
+    padding: '8px',
+    borderRadius: 0,
+    border: '1px solid rgba(255, 183, 3, 0.34)',
     cursor: 'pointer',
-    transition: 'all 0.25s ease',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.6)'
+    transition: 'background-color 0.2s ease, color 0.2s ease'
   },
   gameIcon: {
-    fontSize: '25px'
+    fontSize: '32px',
+    lineHeight: 1,
+    filter: 'saturate(0.78) drop-shadow(0 1px 3px rgba(0,0,0,0.8))',
+    transition: 'opacity 0.2s ease'
   },
   gameTitle: {
-    color: '#ffb703',
-    fontSize: '14px',
+    color: 'inherit',
+    fontSize: 'clamp(11px, 2.8vw, 14px)',
     fontWeight: 'bold',
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    textShadow: '0 1px 4px rgba(0,0,0,0.9)'
   }
 };
