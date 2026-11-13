@@ -98,6 +98,37 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
   );
 }
 
+function VictoryFireworks() {
+  const bursts = [
+    { left: '22%', top: '28%', delay: '0s' },
+    { left: '76%', top: '34%', delay: '.45s' },
+    { left: '50%', top: '68%', delay: '.9s' }
+  ];
+
+  return (
+    <div className="victory-overlay" aria-label="Pháo hoa chúc mừng chiến thắng">
+      {bursts.map((burst, burstIndex) => (
+        <div
+          className="firework-burst"
+          key={burst.left}
+          style={{ left: burst.left, top: burst.top, animationDelay: burst.delay }}
+        >
+          {Array.from({ length: 12 }, (_, index) => (
+            <span
+              key={index}
+              style={{
+                '--particle-angle': `${index * 30}deg`,
+                '--particle-delay': `${burstIndex * 0.45}s`,
+                '--particle-color': ['#fbbf24', '#fb7185', '#38bdf8', '#c084fc'][index % 4]
+              }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roomId: initialRoomId, onRoomLeave, setNotice }) {
   const info = GAME_INFO[game];
   const username = currentUser?.username;
@@ -201,6 +232,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const opponentPlayer = playerKeys.map((key) => players[key]).find((player) => player !== myPlayer);
   const isMyRuleRequest = myPlayer?.ruleRequest || false;
   const isOpponentRuleRequest = opponentPlayer?.ruleRequest || false;
+  const isMyVictory = roomData?.status === 'finished' && roomData.winner === myPlayer?.symbol;
   const isMyTurn = roomData?.turn === username;
   const opponentName = playerKeys.find((key) => key !== username);
   const checkedKingIndex = roomData?.status === 'playing'
@@ -564,7 +596,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                     : roomData.winner === myPlayer?.symbol ? '🎉 Bạn thắng!' : `🏁 ${roomData.players?.[playerKeys.find((key) => players[key].symbol === roomData.winner)]?.fullName || 'Đối thủ'} thắng`}
                 </strong>
                 <span>{roomData.resultReason}</span>
-                <button type="button" className="primary" onClick={handleRematch}>
+                <button
+                  type="button"
+                  className={`primary rematch-button ${isMyVictory ? 'victory-rematch' : ''}`}
+                  onClick={handleRematch}
+                >
                   {myPlayer?.rematchRequested ? 'Đã yêu cầu chơi lại' : '🔄 Chơi lại'}
                 </button>
               </div>
@@ -586,6 +622,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                 winningLine={roomData.winningLine || []}
                 onMove={handleMove}
               />
+              {isMyVictory && <VictoryFireworks />}
               {game === 'go' && roomData.status === 'playing' && (
                 <button type="button" className="pass-btn" onClick={handlePass} disabled={!isMyTurn}>Bỏ lượt</button>
               )}
@@ -656,9 +693,25 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-status .game-help { flex-basis: 100%; margin: 0; color: #cbd5e1; font-size: 12px; text-align: left; }
         .game-result { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .game-result span { color: #cbd5e1; font-size: 12px; }
+        .game-result .rematch-button { padding: 8px 13px; }
+        .game-result .victory-rematch { position: relative; padding: 12px 22px; border: 2px solid #fde68a; background: linear-gradient(135deg, #f59e0b, #b45309); color: #fff; font-size: 16px; box-shadow: 0 0 10px #fbbf24, 0 0 24px #f59e0b99; animation: victory-button-pulse 1s ease-in-out infinite alternate; }
+        .game-result .victory-rematch:hover { filter: brightness(1.2); transform: scale(1.04); }
+        @keyframes victory-button-pulse { to { box-shadow: 0 0 18px #fde68a, 0 0 36px #f59e0b; transform: scale(1.06); } }
+        .victory-overlay { position: absolute; z-index: 4; inset: 0; overflow: hidden; border-radius: 6px; background: #02061755; pointer-events: none; animation: victory-darken .7s ease-out both; }
+        @keyframes victory-darken { from { background: transparent; } to { background: #02061766; } }
+        .firework-burst { position: absolute; width: 1px; height: 1px; animation: firework-position 2.4s ease-in-out infinite; }
+        .firework-burst span { position: absolute; top: 0; left: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--particle-color); box-shadow: 0 0 8px 2px var(--particle-color); opacity: 0; animation: firework-particle 2.4s ease-out infinite; animation-delay: var(--particle-delay); }
+        .firework-burst span:nth-child(3n) { animation-delay: calc(var(--particle-delay) + .12s); }
+        .firework-burst span:nth-child(3n + 1) { animation-delay: calc(var(--particle-delay) + .24s); }
+        @keyframes firework-position { 0%, 100% { opacity: 0; } 12%, 78% { opacity: 1; } }
+        @keyframes firework-particle {
+          0%, 15% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--particle-angle)) translateY(0) scale(.3); }
+          30% { opacity: 1; }
+          65%, 100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--particle-angle)) translateY(-48px) scale(.15); }
+        }
         .cancelled-text { color: #fca5a5 !important; }
         .board-game-content { display: flex; justify-content: center; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-        .board-game-board-wrap { width: min(100%, 560px); text-align: center; }
+        .board-game-board-wrap { position: relative; width: min(100%, 560px); text-align: center; }
         .board-game-board { display: grid; width: min(100%, 560px); aspect-ratio: 1; margin: 0 auto; overflow: hidden; border: 5px solid #6b472b; background: #d6aa66; box-shadow: 0 6px 18px #0008; }
         .board-game-board.chess { grid-template-columns: repeat(8, 1fr); border-color: #57391f; }
         .board-game-board.caro { grid-template-columns: repeat(15, 1fr); gap: 1px; width: min(100%, 600px); border: 4px solid #6b472b; background: #6b472b; }
