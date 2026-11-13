@@ -99,14 +99,15 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
             key={game.screen}
             style={{
               ...styles.gameWidget,
-              backgroundColor: hoveredGate === game.screen ? 'rgba(120, 83, 35, 0.9)' : 'rgba(15, 23, 42, 0.72)',
-              color: hoveredGate === game.screen ? '#fff1c2' : '#e5d7b8'
+              backgroundColor: hoveredGate === game.screen ? 'rgba(120, 83, 35, 0.38)' : 'transparent',
+              color: hoveredGate === game.screen ? '#fff1c2' : '#e5d7b8',
+              opacity: hoveredGate === game.screen ? 1 : 0.7
             }}
             onMouseEnter={() => setHoveredGate(game.screen)}
             onMouseLeave={() => setHoveredGate(null)}
             onClick={() => onNavigate(game.screen)}
           >
-            <span style={{ ...styles.gameIcon, opacity: hoveredGate === game.screen ? 0.88 : 0.68 }}>{game.icon}</span>
+            <span style={styles.gameIcon}>{game.icon}</span>
             <span style={styles.gameTitle}>{game.title}</span>
           </button>
         ))}
@@ -195,21 +196,15 @@ const styles = {
   },
   gameSelector: {
     position: 'absolute',
+    right: '24px',
     bottom: '22px',
-    left: '50%',
-    transform: 'translateX(-50%)',
     zIndex: 10,
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
     width: 'min(76vw, 270px)',
     aspectRatio: '1',
-    overflow: 'hidden',
-    borderRadius: '50%',
-    border: '2px solid rgba(255, 183, 3, 0.58)',
-    boxShadow: '0 5px 22px rgba(0,0,0,0.68), inset 0 0 18px rgba(255,183,3,0.12)',
-    background: 'rgba(15, 23, 42, 0.78)',
-    backdropFilter: 'blur(8px)'
+    overflow: 'hidden'
   },
   gameWidget: {
     display: 'flex',
@@ -220,8 +215,7 @@ const styles = {
     minWidth: 0,
     minHeight: 0,
     padding: '8px',
-    borderRadius: 0,
-    border: '1px solid rgba(255, 183, 3, 0.34)',
+    border: 'none',
     cursor: 'pointer',
     transition: 'background-color 0.2s ease, color 0.2s ease'
   },
