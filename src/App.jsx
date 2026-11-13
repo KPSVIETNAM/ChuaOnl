@@ -100,17 +100,18 @@ export default function App() {
       // Load the room before the transaction so its first update sees the current database value.
       const joinedRoom = await runTransaction(roomRef, (currentRoom) => {
         const players = currentRoom?.players || {};
+        const inviteStatus = currentRoom?.inviteStatus?.[currentUser.username];
         if (currentRoom?.status !== 'waiting' || !players[fromUsername] ||
             Object.keys(players).length !== 1 || players[currentUser.username] ||
             !currentRoom.invitedUsers?.[currentUser.username] ||
-            currentRoom.inviteStatus?.[currentUser.username] !== 'pending') {
+            (inviteStatus && inviteStatus !== 'pending')) {
           return;
         }
         const symbol = gameInfo.colors[Object.keys(players).length];
-        const inviteStatus = { ...(currentRoom.inviteStatus || {}), [currentUser.username]: 'accepted' };
+        const updatedInviteStatus = { ...(currentRoom.inviteStatus || {}), [currentUser.username]: 'accepted' };
         Object.keys(currentRoom.invitedUsers || {}).forEach((invitedUsername) => {
-          if (invitedUsername !== currentUser.username && inviteStatus[invitedUsername] === 'pending') {
-            inviteStatus[invitedUsername] = 'expired';
+          if (invitedUsername !== currentUser.username && updatedInviteStatus[invitedUsername] === 'pending') {
+            updatedInviteStatus[invitedUsername] = 'expired';
           }
         });
         const joinedPlayers = {
@@ -124,7 +125,7 @@ export default function App() {
         joinedPlayers[fromUsername] = { ...joinedPlayers[fromUsername], ready: true };
         return {
           ...currentRoom,
-          inviteStatus,
+          inviteStatus: updatedInviteStatus,
           players: joinedPlayers,
           status: 'playing',
           turn: fromUsername,
@@ -134,7 +135,32 @@ export default function App() {
       }, { applyLocally: false });
 
       if (!joinedRoom.committed) {
-        alert('Lời mời đã quá hạn 2');
+        const latestRoom = (await get(roomRef)).val();
+        const latestPlayers = latestRoom?.players || {};
+        const latestInviteStatus = latestRoom?.inviteStatus?.[currentUser.username];
+        const transactionAbortReason = !latestRoom
+          ? 'Phòng không còn tồn tại.'
+          : latestRoom.status !== 'waiting'
+            ? `Trạng thái phòng là "${latestRoom.status}".`
+            : !latestPlayers[fromUsername]
+              ? 'Không tìm thấy người mời trong phòng.'
+              : Object.keys(latestPlayers).length !== 1
+                ? `Phòng hiện có ${Object.keys(latestPlayers).length} người chơi.`
+                : latestPlayers[currentUser.username]
+                  ? 'Tài khoản của bạn đã có trong phòng.'
+                  : !latestRoom.invitedUsers?.[currentUser.username]
+                    ? 'Tài khoản của bạn không có trong danh sách được mời.'
+                    : latestInviteStatus && latestInviteStatus !== 'pending'
+                      ? `Trạng thái lời mời là "${latestInviteStatus}".`
+                      : 'Phòng thay đổi trong lúc xử lý.';
+        console.warn('Không thể chấp nhận lời mời cờ:', {
+          game,
+          roomId,
+          fromUsername,
+          invitedUsername: currentUser.username,
+          reason: transactionAbortReason
+        });
+        alert(`Không thể vào phòng: ${transactionAbortReason}`);
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
