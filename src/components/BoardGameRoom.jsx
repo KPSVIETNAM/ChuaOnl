@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { onValue, push, ref, remove, runTransaction, set, update } from 'firebase/database';
 import { db } from '../firebase';
+import { revokePendingGameInvites } from './boardGameInvites';
 import {
   applyBoardMove,
   createInitialBoard,
@@ -216,7 +217,8 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         turn: '',
         status: 'waiting',
         chat: {},
-        invitedUsers: { [targetUsername]: true }
+        invitedUsers: { [targetUsername]: true },
+        inviteStatus: { [targetUsername]: 'pending' }
       });
       setActiveRoomId(targetRoomId);
       setStatus('dang_dau');
@@ -224,8 +226,9 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         status: 'dang_dau', roomId: targetRoomId, matchedRoomId: targetRoomId
       });
     } else {
-      await update(ref(db, `${basePath}/rooms/${targetRoomId}/invitedUsers`), {
-        [targetUsername]: true
+      await update(ref(db, `${basePath}/rooms/${targetRoomId}`), {
+        [`invitedUsers/${targetUsername}`]: true,
+        [`inviteStatus/${targetUsername}`]: 'pending'
       });
     }
 
@@ -341,19 +344,26 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
 
   const handleLeaveRoom = async () => {
     if (roomId && roomData) {
-      const updatedPlayers = { ...players };
-      delete updatedPlayers[username];
-      if (roomData.status === 'playing') {
-        await update(ref(db, `${basePath}/rooms/${roomId}`), {
-          status: 'cancelled',
-          resultReason: `${fullName} đã rời trận.`,
-          players: updatedPlayers
-        });
-      } else if (Object.keys(updatedPlayers).length) {
-        await update(ref(db, `${basePath}/rooms/${roomId}`), { players: updatedPlayers });
-      } else {
-        await remove(ref(db, `${basePath}/rooms/${roomId}`));
-      }
+      const roomRef = ref(db, `${basePath}/rooms/${roomId}`);
+      const leaveResult = await runTransaction(roomRef, (currentRoom) => {
+        if (!currentRoom) return currentRoom;
+        const updatedPlayers = { ...(currentRoom.players || {}) };
+        delete updatedPlayers[username];
+
+        if (currentRoom.status === 'playing' || currentRoom.status === 'waiting') {
+          return {
+            ...currentRoom,
+            status: 'cancelled',
+            resultReason: `${fullName} đã rời phòng. Lời mời đang chờ đã được thu hồi.`,
+            players: updatedPlayers
+          };
+        }
+        if (!Object.keys(updatedPlayers).length) return null;
+        return { ...currentRoom, players: updatedPlayers };
+      }, { applyLocally: false });
+
+      const latestRoom = leaveResult.snapshot.val();
+      if (latestRoom) await revokePendingGameInvites(game, roomId, latestRoom);
     }
     await update(ref(db, `${basePath}/lobby/${username}`), { status: 'dang_doi', roomId: null, matchedRoomId: null });
     setActiveRoomId(null);
@@ -421,6 +431,26 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                   {info.colorNames[players[key].symbol]} · {players[key].fullName}{key === username ? ' (Bạn)' : ''}
                 </span>
               ))}
+              {roomData.invitedUsers && Object.keys(roomData.invitedUsers).length > 0 && (
+                <div className="game-invites">
+                  <strong>Lời mời:</strong>
+                  {Object.keys(roomData.invitedUsers).map((invitedUsername) => {
+                    const inviteStatus = roomData.inviteStatus?.[invitedUsername] || 'pending';
+                    const inviteLabels = {
+                      pending: 'Đang mời',
+                      declined: 'Đã từ chối',
+                      accepted: 'Đã vào phòng',
+                      expired: 'Đã quá hạn',
+                      revoked: 'Đã thu hồi'
+                    };
+                    return (
+                      <span key={invitedUsername} className={`invite-${inviteStatus}`}>
+                        {lobby[invitedUsername]?.fullName || invitedUsername}: {inviteLabels[inviteStatus] || inviteStatus}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {roomData.status === 'waiting' && myPlayer && (
               <button type="button" className="primary" onClick={handleToggleReady}>
@@ -533,6 +563,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .game-players { justify-content: flex-start; }
         .game-players span { padding: 6px 9px; background: #334155; border-radius: 20px; font-size: 12px; }
         .game-players span.ready { background: #065f46; }
+        .game-invites { flex-basis: 100%; display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: #cbd5e1; font-size: 11px; }
+        .game-invites span { padding: 4px 8px; border-radius: 12px; background: #334155; }
+        .game-invites .invite-pending { color: #fde68a; background: #713f12; }
+        .game-invites .invite-declined, .game-invites .invite-revoked, .game-invites .invite-expired { color: #fecaca; background: #7f1d1d; }
+        .game-invites .invite-accepted { color: #a7f3d0; background: #065f46; }
         .board-game-status strong { color: #fbbf24; font-size: 13px; }
         .board-game-status .game-help { flex-basis: 100%; margin: 0; color: #cbd5e1; font-size: 12px; text-align: left; }
         .game-result { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

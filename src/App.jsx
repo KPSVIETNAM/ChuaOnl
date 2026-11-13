@@ -12,6 +12,7 @@ const CoTuong = lazy(() => import('./components/CoTuong'));
 const CoVay = lazy(() => import('./components/covay'));
 
 import { ref, onValue, remove, update, get, runTransaction } from 'firebase/database';
+import { revokePendingGameInvites } from './components/boardGameInvites';
 
 export default function App() {
   // Khởi tạo currentUser an toàn từ localStorage (có try...catch chống đơ)
@@ -99,7 +100,9 @@ export default function App() {
         inviterLobby?.status === 'dang_dau';
       if (!inviterScreen.startsWith(gameInfo.screen) || !invitedRoomIsCurrent ||
           !roomData || roomData.status !== 'waiting' ||
-          !roomData.players?.[fromUsername] || Object.keys(roomData.players || {}).length !== 1) {
+          !roomData.players?.[fromUsername] || Object.keys(roomData.players || {}).length !== 1 ||
+          !roomData.invitedUsers?.[currentUser.username] ||
+          roomData.inviteStatus?.[currentUser.username] !== 'pending') {
         alert('Lời mời đã quá hạn');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
@@ -109,12 +112,21 @@ export default function App() {
       const joinedRoom = await runTransaction(roomRef, (currentRoom) => {
         const players = currentRoom?.players || {};
         if (currentRoom?.status !== 'waiting' || !players[fromUsername] ||
-            Object.keys(players).length !== 1 || players[currentUser.username]) {
+            Object.keys(players).length !== 1 || players[currentUser.username] ||
+            !currentRoom.invitedUsers?.[currentUser.username] ||
+            currentRoom.inviteStatus?.[currentUser.username] !== 'pending') {
           return;
         }
         const symbol = gameInfo.colors[Object.keys(players).length];
+        const inviteStatus = { ...(currentRoom.inviteStatus || {}), [currentUser.username]: 'accepted' };
+        Object.keys(currentRoom.invitedUsers || {}).forEach((invitedUsername) => {
+          if (invitedUsername !== currentUser.username && inviteStatus[invitedUsername] === 'pending') {
+            inviteStatus[invitedUsername] = 'expired';
+          }
+        });
         return {
           ...currentRoom,
+          inviteStatus,
           players: {
             ...players,
             [currentUser.username]: {
@@ -133,6 +145,7 @@ export default function App() {
         return;
       }
 
+      await revokePendingGameInvites(game, roomId, joinedRoom.snapshot.val());
       await update(ref(db, `board_games/${game}/lobby/${currentUser.username}`), {
         username: currentUser.username,
         fullName: currentUser.fullName || currentUser.username,
@@ -151,7 +164,23 @@ export default function App() {
 
   const handleDeclineBoardGameInvite = async () => {
     if (!currentUser?.username) return;
-    await remove(ref(db, `board_game_invites/${currentUser.username}`));
+    const inviteRef = ref(db, `board_game_invites/${currentUser.username}`);
+    const snapshot = await get(inviteRef);
+    const invite = snapshot.val();
+    if (invite?.game && invite?.roomId) {
+      const statusRef = ref(db, `board_games/${invite.game}/rooms/${invite.roomId}/inviteStatus/${currentUser.username}`);
+      const result = await runTransaction(statusRef, (status) => status === 'pending' ? 'declined' : undefined, {
+        applyLocally: false
+      });
+      if (result.committed) {
+        const latestInvite = (await get(inviteRef)).val();
+        if (latestInvite?.game === invite.game && latestInvite?.roomId === invite.roomId) {
+          await remove(inviteRef);
+        }
+      }
+    } else {
+      await remove(inviteRef);
+    }
     setBoardGameInvite(null);
   };
 
@@ -264,10 +293,41 @@ export default function App() {
   const handleLogout = async () => {
     if (currentUser?.username) {
       try {
+        const username = currentUser.username;
+        const games = ['chess', 'xiangqi', 'go'];
+        await Promise.all(games.map(async (game) => {
+          const lobbySnapshot = await get(ref(db, `board_games/${game}/lobby/${username}`));
+          const roomId = lobbySnapshot.val()?.roomId;
+          if (!roomId) return;
+
+          const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
+          const roomSnapshot = await get(roomRef);
+          const roomData = roomSnapshot.val();
+          if (!roomData) return;
+
+          if (roomData.status === 'waiting' && roomData.players?.[username]) {
+            await runTransaction(roomRef, (currentRoom) => {
+              if (!currentRoom || currentRoom.status !== 'waiting' || !currentRoom.players?.[username]) {
+                return;
+              }
+              const players = { ...currentRoom.players };
+              delete players[username];
+              return {
+                ...currentRoom,
+                status: 'cancelled',
+                resultReason: 'Người mời đã đăng xuất. Lời mời đang chờ đã được thu hồi.',
+                players
+              };
+            }, { applyLocally: false });
+          }
+
+          const latestRoom = (await get(roomRef)).val();
+          if (latestRoom) await revokePendingGameInvites(game, roomId, latestRoom);
+        }));
         const onlineRef = ref(db, `online_users/${currentUser.username}`);
         await remove(onlineRef);
       } catch (error) {
-        console.error("Lỗi khi xóa trạng thái online:", error);
+        console.error('Lỗi khi thu hồi lời mời hoặc cập nhật trạng thái đăng xuất:', error);
       }
     }
     localStorage.removeItem('kps_current_user');
