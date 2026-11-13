@@ -204,6 +204,7 @@ const styles = {
     gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
     width: 'min(76vw, 270px)',
     aspectRatio: '1',
+    borderRadius: '50%',
     overflow: 'hidden'
   },
   gameWidget: {
