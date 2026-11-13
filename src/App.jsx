@@ -124,17 +124,23 @@ export default function App() {
             inviteStatus[invitedUsername] = 'expired';
           }
         });
+        const joinedPlayers = {
+          ...players,
+          [currentUser.username]: {
+            fullName: currentUser.fullName || currentUser.username,
+            symbol,
+            ready: true
+          }
+        };
+        joinedPlayers[fromUsername] = { ...joinedPlayers[fromUsername], ready: true };
         return {
           ...currentRoom,
           inviteStatus,
-          players: {
-            ...players,
-            [currentUser.username]: {
-              fullName: currentUser.fullName || currentUser.username,
-              symbol,
-              ready: false
-            }
-          }
+          players: joinedPlayers,
+          status: 'playing',
+          turn: fromUsername,
+          winner: null,
+          resultReason: null
         };
       }, { applyLocally: false });
 
