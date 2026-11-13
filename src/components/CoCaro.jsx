@@ -489,7 +489,12 @@ const handleLeaveRoom = async () => {
           ) : (
             Object.entries(players).map(([uname, p]) => (
               <span key={uname} className={`player-badge ${p.ready ? 'ready' : ''}`}>
-                {p.symbol === 'X' ? '❌' : '⭕'} {p.fullName} {p.ready ? '(Đã sẵn sàng)' : '(Chưa sẵn sàng)'}
+                {p.symbol === 'X' ? '❌' : '⭕'} {p.fullName}
+                {roomData?.status === 'waiting' && (
+                  <span className="player-ready-status">
+                    {p.ready ? ' · Sẵn sàng' : ' · Chưa sẵn sàng'}
+                  </span>
+                )}
               </span>
             ))
           )}
