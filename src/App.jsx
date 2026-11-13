@@ -100,7 +100,7 @@ export default function App() {
       if (!inviterScreen.startsWith(gameInfo.screen) || !invitedRoomIsCurrent ||
           !roomData || roomData.status !== 'waiting' ||
           !roomData.players?.[fromUsername] || Object.keys(roomData.players || {}).length !== 1) {
-        alert('Lời mời đã quá hạn: người mời đã vào trận khác hoặc phòng đã đủ người.');
+        alert('Lời mời đã quá hạn');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
@@ -127,7 +127,7 @@ export default function App() {
       }, { applyLocally: false });
 
       if (!joinedRoom.committed) {
-        alert('Lời mời đã quá hạn: người mời đã vào trận khác hoặc phòng đã đủ người.');
+        alert('Lời mời đã quá hạn');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;

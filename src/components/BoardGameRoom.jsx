@@ -229,6 +229,11 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       });
     }
 
+    await update(ref(db, `${basePath}/lobby/${username}`), {
+      status: 'dang_dau',
+      roomId: targetRoomId,
+      matchedRoomId: targetRoomId
+    });
     await set(ref(db, `board_game_invites/${targetUsername}`), {
       game,
       roomId: targetRoomId,
@@ -236,7 +241,6 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
       fromFullName: fullName,
       timestamp: Date.now()
     });
-    setNotice?.(`Đã gửi lời mời chơi ${info.title} cho ${targetUser.fullName || targetUsername}.`);
   };
 
   const handleToggleReady = async () => {
