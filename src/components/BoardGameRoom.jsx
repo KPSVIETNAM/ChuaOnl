@@ -88,7 +88,7 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
   );
 }
 
-export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roomId: initialRoomId, onBack, setNotice }) {
+export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roomId: initialRoomId, onRoomLeave, setNotice }) {
   const info = GAME_INFO[game];
   const username = currentUser?.username;
   const fullName = currentUser?.fullName || username || 'Đạo hữu';
@@ -392,7 +392,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
     setActiveRoomId(null);
     setRoomData(null);
     setStatus('dang_doi');
-    onBack?.();
+    onRoomLeave?.();
   };
 
   const sendChat = async (event) => {
@@ -427,7 +427,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
               <button type="button" className="primary" onClick={handleRandomMatch}>🎲 Ghép ngẫu nhiên</button>
             )}
             {status === 'dang_tim_ghep' && <button type="button" className="danger" onClick={handleCancelMatch}>Hủy tìm trận</button>}
-            {roomId && <button type="button" onClick={handleLeaveRoom}>← Rời phòng</button>}
+            {roomId && <button type="button" onClick={handleLeaveRoom}>← Rời trận</button>}
           </div>
         </div>
       </header>

@@ -564,6 +564,7 @@ export default function App() {
           activeUsers={activeUsers}
           setNotice={(msg) => alert(msg)}
           onBack={() => setCurrentScreen('tamquan')}
+          onRoomLeave={() => setCurrentScreen(prefix)}
         />
         {renderCaroInvitePopup()}
         {renderBoardGameInvitePopup()}
