@@ -291,6 +291,16 @@ function xiangqiKingInCheck(board, side) {
   );
 }
 
+export function getCheckedKingIndex(game, board, side) {
+  if ((game !== 'chess' && game !== 'xiangqi') || !side) return -1;
+  const king = board.findIndex((piece) => piece === `${side}K`);
+  if (king < 0) return -1;
+  const inCheck = game === 'chess'
+    ? chessKingInCheck(board, side)
+    : xiangqiKingInCheck(board, side);
+  return inCheck ? king : -1;
+}
+
 function xiangqiLegalMoves(board, from) {
   const side = board[from]?.[0];
   return xiangqiPseudoMoves(board, from).filter((move) => {

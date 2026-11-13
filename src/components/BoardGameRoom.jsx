@@ -5,6 +5,7 @@ import { revokePendingGameInvites } from './boardGameInvites';
 import {
   applyBoardMove,
   createInitialBoard,
+  getCheckedKingIndex,
   gameSizes,
   getGameSymbols,
   getInitialGameState,
@@ -23,7 +24,7 @@ function getPlayerColor(game, playerCount) {
   return GAME_INFO[game].colors[playerCount % 2];
 }
 
-function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove }) {
+function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, checkedKingIndex }) {
   const [selection, setSelection] = useState(null);
   const selected = selection?.board === board ? selection.index : null;
   const symbols = useMemo(() => getGameSymbols(game), [game]);
@@ -70,6 +71,7 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove }) {
               game === 'go' ? 'go-point' : '',
               game === 'xiangqi' ? 'xiangqi-point' : '',
               isSelected ? 'selected' : '',
+              index === checkedKingIndex ? 'king-in-check' : '',
               isLegal ? 'legal-move' : ''
             ].filter(Boolean).join(' ')}
             onClick={() => onCellClick(index)}
@@ -100,6 +102,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const [chatText, setChatText] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const chatRef = useRef(null);
+  const lastCheckSoundRef = useRef(null);
 
   useEffect(() => {
     if (!username) return undefined;
@@ -182,6 +185,23 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   const myPlayer = players[username];
   const isMyTurn = roomData?.turn === username;
   const opponentName = playerKeys.find((key) => key !== username);
+  const checkedKingIndex = roomData?.status === 'playing'
+    ? getCheckedKingIndex(game, roomData.board || [], players[roomData.turn]?.symbol)
+    : -1;
+
+  useEffect(() => {
+    if (checkedKingIndex < 0 || !roomData?.board) {
+      lastCheckSoundRef.current = null;
+      return;
+    }
+
+    const positionKey = `${roomId}:${roomData.turn}:${roomData.board.join('|')}`;
+    if (lastCheckSoundRef.current === positionKey) return;
+    lastCheckSoundRef.current = positionKey;
+
+    const bell = new Audio('/audio/chuong1.mp3');
+    bell.play().catch((error) => console.warn('Không thể phát chuông báo chiếu tướng:', error));
+  }, [checkedKingIndex, roomData?.board, roomData?.turn, roomData?.status, roomId]);
 
   const updateLobbyStatus = async (nextStatus, matchedRoomId = null) => {
     if (!username) return;
@@ -466,6 +486,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                 {score}
               </strong>
             )}
+            {checkedKingIndex >= 0 && <strong className="check-warning">⚠️ Chiếu tướng!</strong>}
             {roomData.status === 'waiting' && (
               <p className="game-help">
                 {!myPlayer
@@ -503,6 +524,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
                 myColor={myPlayer?.symbol}
                 gameState={roomData.gameState || {}}
                 canMove={roomData.status === 'playing'}
+                checkedKingIndex={checkedKingIndex}
                 onMove={handleMove}
               />
               {game === 'go' && roomData.status === 'playing' && (
@@ -598,6 +620,14 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .board-game-board.xiangqi .board-game-cell:nth-child(9n) { border-right: 0; }
         .board-game-board.go .board-game-cell { background: transparent !important; }
         .board-game-cell.selected { box-shadow: inset 0 0 0 4px #22c55e; z-index: 1; }
+        .board-game-cell.king-in-check { z-index: 2; animation: king-check-pulse 0.8s ease-in-out infinite alternate; }
+        .board-game-cell.king-in-check .game-piece { filter: drop-shadow(0 0 8px #ef4444) drop-shadow(0 0 14px #fbbf24); }
+        .check-warning { color: #fca5a5 !important; animation: king-check-text 0.8s ease-in-out infinite alternate; }
+        @keyframes king-check-pulse {
+          from { box-shadow: inset 0 0 0 3px #ef4444, 0 0 8px #ef4444; background-color: #ef444466; }
+          to { box-shadow: inset 0 0 0 5px #fbbf24, 0 0 18px #fbbf24; background-color: #fbbf2466; }
+        }
+        @keyframes king-check-text { to { text-shadow: 0 0 10px #ef4444; } }
         .board-game-cell.legal-move::after { content: ''; position: absolute; width: 23%; height: 23%; border-radius: 50%; background: #16a34a99; }
         .board-game-cell.go-point.legal-move::after { width: 76%; height: 76%; }
         .game-piece { z-index: 1; font-family: "Segoe UI Symbol", "Noto Sans CJK SC", serif; font-size: clamp(20px, 5vw, 46px); line-height: 1; }
