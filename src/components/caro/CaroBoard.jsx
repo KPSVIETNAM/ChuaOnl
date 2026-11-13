@@ -2,11 +2,15 @@ import React from 'react';
 
 const TOTAL_CELLS = 225; // 15 * 15
 
-export default function CaroBoard({ board, winningLine, status, onCellClick }) {
+export default function CaroBoard({ board, winningLine, status, onCellClick, mySymbol = 'X' }) {
+  const visualOrder = Array.from({ length: TOTAL_CELLS }, (_, index) => index);
+  if (mySymbol === 'O') visualOrder.reverse();
+
   return (
     <div className="caro-board">
       {board && board.length === TOTAL_CELLS ? (
-        board.map((cell, idx) => {
+        visualOrder.map((idx) => {
+          const cell = board[idx];
           const isWinningCell = winningLine.includes(idx);
           return (
             <button 

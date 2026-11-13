@@ -548,6 +548,7 @@ const handleLeaveRoom = async () => {
           board={roomData?.board} 
           winningLine={winningLine} 
           status={roomData?.status} 
+          mySymbol={roomData?.players?.[username]?.symbol || 'X'}
           onCellClick={handleCellClick} 
         />
 

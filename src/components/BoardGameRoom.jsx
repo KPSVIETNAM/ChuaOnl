@@ -28,6 +28,10 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove }) {
   const symbols = useMemo(() => getGameSymbols(game), [game]);
   const size = gameSizes[game];
   const legalMoves = selected === null ? [] : getLegalMoves(game, board, selected, gameState);
+  const visualOrder = useMemo(() => {
+    const indices = Array.from({ length: board.length }, (_, index) => index);
+    return myColor === GAME_INFO[game].colors[1] ? indices.reverse() : indices;
+  }, [board.length, game, myColor]);
 
   const onCellClick = (index) => {
     if (!canMove) return;
@@ -49,7 +53,8 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove }) {
 
   return (
     <div className={`board-game-board ${game}`} role="grid" aria-label={`Bàn ${GAME_INFO[game].title}`}>
-      {board.map((piece, index) => {
+      {visualOrder.map((index) => {
+        const piece = board[index];
         const row = Math.floor(index / size);
         const col = index % size;
         const isSelected = selected === index;
@@ -395,7 +400,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
             <div className="game-players">
               {playerKeys.map((key) => (
                 <span key={key} className={players[key].ready ? 'ready' : ''}>
-                  {info.colorNames[players[key].symbol]} · {players[key].fullName}
+                  {info.colorNames[players[key].symbol]} · {players[key].fullName}{key === username ? ' (Bạn)' : ''}
                 </span>
               ))}
             </div>
@@ -405,7 +410,21 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
               </button>
             )}
             {roomData.status === 'playing' && (
-              <strong>{isMyTurn ? 'Đến lượt bạn' : `Lượt của ${moveTurn}`}{score}</strong>
+              <strong>
+                {isMyTurn ? 'Đến lượt bạn — chọn quân rồi chọn ô xanh' : `Lượt của ${moveTurn}`}
+                {score}
+              </strong>
+            )}
+            {roomData.status === 'waiting' && (
+              <p className="game-help">
+                {!myPlayer
+                  ? 'Bạn không có trong danh sách người chơi của phòng này.'
+                  : playerKeys.length < 2
+                    ? 'Đang chờ người chơi thứ hai tham gia phòng.'
+                    : myPlayer.ready
+                      ? 'Bạn đã sẵn sàng. Chờ đối thủ bấm Sẵn sàng để bắt đầu.'
+                      : 'Cả hai người chơi cần bấm Sẵn sàng; cờ Trắng đi trước.'}
+              </p>
             )}
             {roomData.status === 'finished' && (
               <div className="game-result">
@@ -490,6 +509,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .game-players span { padding: 6px 9px; background: #334155; border-radius: 20px; font-size: 12px; }
         .game-players span.ready { background: #065f46; }
         .board-game-status strong { color: #fbbf24; font-size: 13px; }
+        .board-game-status .game-help { flex-basis: 100%; margin: 0; color: #cbd5e1; font-size: 12px; text-align: left; }
         .game-result { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .game-result span { color: #cbd5e1; font-size: 12px; }
         .cancelled-text { color: #fca5a5 !important; }
