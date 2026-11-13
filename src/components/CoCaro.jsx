@@ -498,14 +498,11 @@ const handleLeaveRoom = async () => {
         {Object.keys(players).length === 2 && (
           <div className="rule-box">
             <div className="rule-summary">
-              <span className="rule-name">Chặn hai đầu</span>
-              <span className={`rule-state ${blockRule ? 'enabled' : ''}`}>{blockRule ? 'BẬT' : 'TẮT'}</span>
-              <span className="rule-help" tabIndex={0} aria-label="Thông tin về luật chặn hai đầu">
-                ?
-                <span className="rule-tooltip" role="tooltip">
+              <span className="rule-tooltip" role="tooltip">
                   Khi bật, chuỗi 5 quân bị chặn ở cả hai đầu sẽ không được tính thắng. Đổi luật cần cả hai người chơi đồng ý.
                 </span>
-              </span>
+              <span className="rule-name">Chặn hai đầu</span>
+              <span className={`rule-state ${blockRule ? 'enabled' : ''}`}>{blockRule ? 'BẬT' : 'TẮT'}</span> 
             </div>
             <button
               onClick={handleToggleRuleRequest}
