@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { db } from './firebase'; 
 import Auth from './components/Auth';
 import TamQuan from './components/TamQuan';
@@ -6,6 +6,10 @@ import ChanhDien from './components/ChanhDien';
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
 import CoCaro from './components/CoCaro';
+
+const CoVua = lazy(() => import('./components/CoVua'));
+const CoTuong = lazy(() => import('./components/CoTuong'));
+const CoVay = lazy(() => import('./components/covay'));
 
 import { ref, onValue, remove, update, get } from 'firebase/database';
 
@@ -35,6 +39,7 @@ export default function App() {
 
   // State & Lắng nghe lời mời Cờ Caro riêng cho tài khoản
   const [caroInvite, setCaroInvite] = useState(null);
+  const [boardGameInvite, setBoardGameInvite] = useState(null);
 
   // Tự động đồng bộ vị trí màn hình hiện tại lên Firebase Realtime Database
   useEffect(() => {
@@ -58,6 +63,78 @@ export default function App() {
       setCaroInvite(snapshot.val());
     });
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.username) return;
+    const inviteRef = ref(db, `board_game_invites/${currentUser.username}`);
+    return onValue(inviteRef, (snapshot) => setBoardGameInvite(snapshot.val()));
+  }, [currentUser]);
+
+  const handleAcceptBoardGameInvite = async () => {
+    if (!boardGameInvite || !currentUser?.username) return;
+    const { game, roomId, fromUsername } = boardGameInvite;
+    const games = {
+      chess: { screen: 'CoVua', colors: ['w', 'b'] },
+      xiangqi: { screen: 'CoTuong', colors: ['r', 'b'] },
+      go: { screen: 'covay', colors: ['B', 'W'] }
+    };
+    const gameInfo = games[game];
+    if (!gameInfo || !roomId || !fromUsername) {
+      alert('Lời mời chơi cờ không hợp lệ.');
+      await remove(ref(db, `board_game_invites/${currentUser.username}`));
+      setBoardGameInvite(null);
+      return;
+    }
+
+    try {
+      const inviterSnap = await get(ref(db, `online_users/${fromUsername}`));
+      const inviterScreen = inviterSnap.val()?.currentScreen || '';
+      const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
+      const roomSnap = await get(roomRef);
+      const roomData = roomSnap.val();
+      if (!inviterScreen.startsWith(gameInfo.screen) || !roomData || roomData.status !== 'waiting') {
+        alert('Lời mời đã hết hạn hoặc người mời không còn ở phòng chờ.');
+        await remove(ref(db, `board_game_invites/${currentUser.username}`));
+        setBoardGameInvite(null);
+        return;
+      }
+
+      const players = roomData.players || {};
+      if (!players[currentUser.username] && Object.keys(players).length < 2) {
+        const playerKeys = Object.keys(players);
+        const symbol = gameInfo.colors[playerKeys.length];
+        await update(roomRef, {
+          players: {
+            ...players,
+            [currentUser.username]: {
+              fullName: currentUser.fullName || currentUser.username,
+              symbol,
+              ready: false
+            }
+          }
+        });
+      }
+      await update(ref(db, `board_games/${game}/lobby/${currentUser.username}`), {
+        username: currentUser.username,
+        fullName: currentUser.fullName || currentUser.username,
+        status: 'dang_dau',
+        roomId,
+        matchedRoomId: roomId
+      });
+      await remove(ref(db, `board_game_invites/${currentUser.username}`));
+      setBoardGameInvite(null);
+      setCurrentScreen(`${gameInfo.screen}_${roomId}`);
+    } catch (error) {
+      console.error('Lỗi khi chấp nhận lời mời chơi cờ:', error);
+      alert('Không thể vào phòng lúc này, vui lòng thử lại.');
+    }
+  };
+
+  const handleDeclineBoardGameInvite = async () => {
+    if (!currentUser?.username) return;
+    await remove(ref(db, `board_game_invites/${currentUser.username}`));
+    setBoardGameInvite(null);
+  };
 
   // Hàm chấp nhận lời mời Caro (Đã tinh chỉnh lại để đồng bộ chuẩn xác trạng thái vào trận)
   const handleAcceptInvite = async () => {
@@ -195,11 +272,14 @@ export default function App() {
 
   if (currentScreen === 'tamquan') {
     return (
-      <TamQuan 
-        currentUser={currentUser} 
-        onNavigate={(screen) => setCurrentScreen(screen)} 
-        handleLogout={handleLogout} 
-      />
+      <>
+        <TamQuan
+          currentUser={currentUser}
+          onNavigate={(screen) => setCurrentScreen(screen)}
+          handleLogout={handleLogout}
+        />
+        {renderBoardGameInvitePopup()}
+      </>
     );
   }
 
@@ -208,7 +288,7 @@ export default function App() {
     0
   );
 
-  const renderHeader = () => (
+  const renderHeader = (showBackButton = true) => (
     <div style={{
       display: 'flex',
       justifyContent: 'space-between',
@@ -223,7 +303,7 @@ export default function App() {
     }}>
       <button 
         onClick={() => setCurrentScreen('tamquan')} 
-        style={{ padding: '6px 14px', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+        style={{ display: showBackButton ? 'inline-block' : 'none', padding: '6px 14px', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
       >
         ← Cổng Tam Quan
       </button>
@@ -264,12 +344,34 @@ export default function App() {
     );
   };
 
+  function renderBoardGameInvitePopup() {
+    if (!boardGameInvite) return null;
+    const gameNames = { chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây' };
+    return (
+      <div style={{
+        position: 'fixed', bottom: '20px', right: '20px', zIndex: 10000,
+        backgroundColor: '#1e293b', border: '2px solid #ffb703', padding: '15px',
+        borderRadius: '12px', color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+      }}>
+        <h4 style={{ margin: '0 0 8px 0', color: '#ffb703' }}>🎲 Lời mời {gameNames[boardGameInvite.game] || 'chơi cờ'}</h4>
+        <p style={{ margin: '0 0 12px 0', fontSize: '13px' }}>
+          <b>{boardGameInvite.fromFullName}</b> mời đạo hữu vào chơi!
+        </p>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleAcceptBoardGameInvite} style={{ padding: '6px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Chấp nhận</button>
+          <button onClick={handleDeclineBoardGameInvite} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Từ chối</button>
+        </div>
+      </div>
+    );
+  }
+
   if (currentScreen === 'chanhdien') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
         <ChanhDien currentUser={currentUser} activeUsers={activeUsers} allUsers={allUsers} logs={logs} />
         {renderCaroInvitePopup()}
+        {renderBoardGameInvitePopup()}
       </div>
     );
   }
@@ -280,6 +382,7 @@ export default function App() {
         {renderHeader()}
         <TinhTamDien currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
         {renderCaroInvitePopup()}
+        {renderBoardGameInvitePopup()}
       </div>
     );
   }
@@ -290,6 +393,7 @@ export default function App() {
         {renderHeader()}
         <TangKinhCac currentUser={currentUser} onBack={() => setCurrentScreen('tamquan')} />
         {renderCaroInvitePopup()}
+        {renderBoardGameInvitePopup()}
       </div>
     );
   }
@@ -307,6 +411,35 @@ export default function App() {
           onBack={() => setCurrentScreen('tamquan')}
         />
         {renderCaroInvitePopup()}
+        {renderBoardGameInvitePopup()}
+      </div>
+    );
+  }
+
+  const boardGameRoutes = [
+    { prefix: 'CoVua', Component: CoVua },
+    { prefix: 'CoTuong', Component: CoTuong },
+    { prefix: 'covay', Component: CoVay }
+  ];
+  const activeBoardGame = boardGameRoutes.find(({ prefix }) =>
+    currentScreen === prefix || currentScreen.startsWith(`${prefix}_`)
+  );
+  if (activeBoardGame) {
+    const { prefix, Component } = activeBoardGame;
+    const roomId = currentScreen.startsWith(`${prefix}_`) ? currentScreen.slice(prefix.length + 1) : null;
+    return (
+      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
+        {renderHeader(false)}
+        <Suspense fallback={<div style={{ color: '#fff', padding: '20px' }}>Đang mở Kỳ Viện...</div>}>
+          <Component
+            currentUser={currentUser}
+            roomId={roomId}
+            activeUsers={activeUsers}
+            setNotice={(msg) => alert(msg)}
+            onBack={() => setCurrentScreen('tamquan')}
+          />
+        </Suspense>
+        {renderBoardGameInvitePopup()}
       </div>
     );
   }

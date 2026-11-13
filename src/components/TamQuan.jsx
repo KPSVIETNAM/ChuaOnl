@@ -87,23 +87,30 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
 
       </div>
 
-      {/* 4. Nút Kỳ Viện Caro (Badge/Đao đài nhỏ ở góc phải màn hình) */}
-      <div 
-        style={{
-          ...styles.caroWidget,
-          transform: hoveredGate === 'CoCaro' ? 'scale(1.05)' : 'scale(1)',
-          borderColor: hoveredGate === 'CoCaro' ? '#ffb703' : 'rgba(255, 183, 3, 0.4)',
-          backgroundColor: hoveredGate === 'CoCaro' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.75)',
-        }}
-        onMouseEnter={() => setHoveredGate('CoCaro')}
-        onMouseLeave={() => setHoveredGate(null)}
-        onClick={() => onNavigate('CoCaro')}
-      >
-        <span style={{ fontSize: '24px' }}>⚔️</span>
-        <div style={{ textAlign: 'left' }}>
-          <div style={styles.caroTitle}>Kỳ Viện Caro</div>
-          <div style={styles.caroSubText}>Đọ sức trí tuệ</div>
-        </div>
+      <div style={styles.gameSelector}>
+        {[
+          { screen: 'CoCaro', icon: '❌', title: 'Cờ Caro' },
+          { screen: 'CoVua', icon: '♟️', title: 'Cờ vua' },
+          { screen: 'CoTuong', icon: '🀄', title: 'Cờ tướng' },
+          { screen: 'covay', icon: '⚫', title: 'Cờ vây' }
+        ].map((game) => (
+          <button
+            type="button"
+            key={game.screen}
+            style={{
+              ...styles.gameWidget,
+              transform: hoveredGate === game.screen ? 'translateY(-5px)' : 'translateY(0)',
+              borderColor: hoveredGate === game.screen ? '#ffb703' : 'rgba(255, 183, 3, 0.4)',
+              backgroundColor: hoveredGate === game.screen ? 'rgba(30, 41, 59, 0.97)' : 'rgba(15, 23, 42, 0.82)'
+            }}
+            onMouseEnter={() => setHoveredGate(game.screen)}
+            onMouseLeave={() => setHoveredGate(null)}
+            onClick={() => onNavigate(game.screen)}
+          >
+            <span style={styles.gameIcon}>{game.icon}</span>
+            <span style={styles.gameTitle}>{game.title}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -186,33 +193,40 @@ const styles = {
     color: '#f8fafc',
     lineHeight: '1.4',
     textShadow: '0 2px 4px rgba(0,0,0,0.9)'
-  }
-  // Style riêng cho ô Caro nhỏ gọn ở góc dưới/giữa phía bên phải
-  ,caroWidget: {
+  },
+  gameSelector: {
     position: 'absolute',
-    bottom: '40px',
-    right: '40px',
+    bottom: '28px',
+    left: '50%',
+    transform: 'translateX(-50%)',
     zIndex: 10,
     display: 'flex',
+    justifyContent: 'center',
+    gap: '10px',
+    width: 'min(94%, 850px)'
+  },
+  gameWidget: {
+    display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '10px 16px',
+    justifyContent: 'center',
+    gap: '9px',
+    flex: '1 1 145px',
+    minHeight: '58px',
+    padding: '9px 13px',
     borderRadius: '12px',
     border: '1px solid rgba(255, 183, 3, 0.4)',
     backdropFilter: 'blur(8px)',
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
+    transition: 'all 0.25s ease',
     boxShadow: '0 4px 16px rgba(0,0,0,0.6)'
   },
-  caroTitle: {
+  gameIcon: {
+    fontSize: '25px'
+  },
+  gameTitle: {
     color: '#ffb703',
     fontSize: '14px',
     fontWeight: 'bold',
-    margin: 0
-  },
-  caroSubText: {
-    color: '#cbd5e1',
-    fontSize: '11px',
-    margin: 0
+    whiteSpace: 'nowrap'
   }
 };
