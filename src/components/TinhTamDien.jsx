@@ -20,26 +20,26 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  const [totalTinhTamMinutes, setTotalTinhTamMinutes] = useState(0);
+  const [myTinhTamMinutes, setMyTinhTamMinutes] = useState(0);
   const [myCongDuc, setMyCongDuc] = useState(0);
   
   const bgAudioRef = useRef(null);
   const moIntervalRef = useRef(null);
   const minuteTimerRef = useRef(null);
 
-  // 1. Lắng nghe tổng số phút tịnh tâm toàn hệ thống và công đức cá nhân
+  // 1. Lắng nghe số phút tịnh tâm và công đức của tài khoản hiện tại
   useEffect(() => {
     if (!username) return;
 
-    const tinhTamRef = ref(db, 'global_stats/totalTinhTamMinutesToanCty');
+    const tinhTamRef = ref(db, `users/${username}/totalTinhTamMinutes`);
     const unsubTinhTam = onValue(tinhTamRef, (snapshot) => {
-      setTotalTinhTamMinutes(snapshot.val() || 0);
-    });
+      setMyTinhTamMinutes(snapshot.val() || 0);
+    }, (error) => console.error('Lỗi đọc thời gian tịnh tâm cá nhân:', error));
 
     const myUserRef = ref(db, `users/${username}/totalCongDuc`);
     const unsubCongDuc = onValue(myUserRef, (snapshot) => {
       setMyCongDuc(snapshot.val() || 0);
-    });
+    }, (error) => console.error('Lỗi đọc công đức cá nhân:', error));
 
     return () => {
       unsubTinhTam();
@@ -52,7 +52,10 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     if (!username) return;
 
     minuteTimerRef.current = setInterval(() => {
-      runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1);
+      Promise.all([
+        runTransaction(ref(db, `users/${username}/totalTinhTamMinutes`), (mins) => (mins || 0) + 1),
+        runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1)
+      ]).catch((error) => console.error('Lỗi cộng thời gian tịnh tâm:', error));
     }, 60000); // 60.000ms = 1 phút
 
     return () => {
@@ -206,13 +209,13 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
           />
         </div>
 
-        {/* Thống kê công đức bản thân & Thời gian tịnh tâm toàn đạo dạng Ngày Giờ Phút Giây */}
+        {/* Thống kê công đức và thời gian tịnh tâm cá nhân */}
         <div className="tinh-tam-stats-group">
           <div className="tinh-tam-stat-pill">
             <span>📿 Công đức của bạn:</span> <b>{myCongDuc}</b>
           </div>
           <div className="tinh-tam-stat-pill">
-            <span>⏳ Thời gian tịnh tâm toàn đạo:</span> <b>{formatMinutesToDHMS(totalTinhTamMinutes)}</b>
+            <span>⏳ Thời gian tịnh tâm của bạn:</span> <b>{formatMinutesToDHMS(myTinhTamMinutes)}</b>
           </div>
         </div>
 
@@ -394,7 +397,6 @@ TinhTamDien.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
 
   runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 1);
   runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 1);
-  runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1);
 
   setTimeout(async () => {
     const randomX = Math.floor(Math.random() * 70) + 15;

@@ -1,7 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { onValue, ref } from 'firebase/database';
+import { db } from '../firebase';
 
 export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
   const [hoveredGate, setHoveredGate] = useState(null);
+  const [companyTinhTamMinutes, setCompanyTinhTamMinutes] = useState(0);
+
+  useEffect(() => {
+    const totalRef = ref(db, 'global_stats/totalTinhTamMinutesToanCty');
+    return onValue(totalRef, (snapshot) => {
+      setCompanyTinhTamMinutes(snapshot.val() || 0);
+    }, (error) => console.error('Lỗi đọc tổng thời gian tịnh tâm công ty:', error));
+  }, []);
+
+  const formatMinutes = (totalMinutes) => {
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    const parts = [];
+    if (days) parts.push(`${days} ngày`);
+    if (hours || days) parts.push(`${hours} giờ`);
+    parts.push(`${minutes} phút`);
+    return parts.join(' ');
+  };
 
   return (
     <div style={styles.container}>
@@ -49,7 +70,9 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
           onClick={() => onNavigate('TinhTamDien')}
         >
           <span style={styles.gateIcon}>🧘</span>
-          <h3 style={styles.gateTitle}>Tịnh Tâm Điện</h3>
+          <h3 style={styles.gateTitle}>
+            Tịnh Tâm Điện <span style={styles.gateTotalTime}>· Tổng tịnh tâm Cty: {formatMinutes(companyTinhTamMinutes)}</span>
+          </h3>
           <p style={styles.gateDesc}>Nơi tịnh dưỡng, tĩnh tâm, buông bỏ muộn phiền.</p>
         </div>
 
@@ -186,6 +209,14 @@ const styles = {
     color: '#ffb703',
     letterSpacing: '1px',
     textShadow: '0 2px 6px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.7)'
+  },
+  gateTotalTime: {
+    display: 'block',
+    marginTop: '3px',
+    color: '#f8fafc',
+    fontSize: '12px',
+    fontWeight: 'normal',
+    letterSpacing: 0
   },
   gateDesc: {
     margin: 0,
