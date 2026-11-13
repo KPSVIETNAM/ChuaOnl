@@ -91,7 +91,7 @@ export default function App() {
       const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
       const roomSnapshot = await get(roomRef);
       if (!roomSnapshot.exists()) {
-        alert('Lời mời đã quá hạn');
+        alert('Lời mời đã quá hạn 1');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
@@ -134,7 +134,7 @@ export default function App() {
       }, { applyLocally: false });
 
       if (!joinedRoom.committed) {
-        alert('Lời mời đã quá hạn');
+        alert('Lời mời đã quá hạn 2');
         await remove(ref(db, `board_game_invites/${currentUser.username}`));
         setBoardGameInvite(null);
         return;
