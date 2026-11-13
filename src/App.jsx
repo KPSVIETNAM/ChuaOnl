@@ -72,8 +72,14 @@ export default function App() {
   }, [currentUser]);
 
   const handleAcceptBoardGameInvite = async () => {
-    if (!boardGameInvite || !currentUser?.username) return;
-    const { game, roomId, fromUsername } = boardGameInvite;
+    if (!currentUser?.username) return;
+    const inviteRef = ref(db, `board_game_invites/${currentUser.username}`);
+    const invite = (await get(inviteRef)).val();
+    if (!invite) {
+      setBoardGameInvite(null);
+      return;
+    }
+    const { game, roomId, fromUsername } = invite;
     const games = {
       chess: { screen: 'CoVua', colors: ['w', 'b'] },
       xiangqi: { screen: 'CoTuong', colors: ['r', 'b'] },
@@ -154,8 +160,9 @@ export default function App() {
 
       if (!joinedRoom?.committed) {
         const latestRoom = (await get(roomRef)).val();
-        const latestRoomRejection = getJoinRejectionReason(latestRoom);
         const transactionSnapshot = joinedRoom?.snapshot?.val();
+        const latestRoomRejection =
+          getJoinRejectionReason(transactionSnapshot) || getJoinRejectionReason(latestRoom);
         transactionAbortReason = latestRoomRejection ||
           'Firebase không xác nhận giao dịch dù phòng vẫn hợp lệ; kiểm tra quyền ghi Realtime Database hoặc lỗi transaction trong console.';
         console.warn('Không thể chấp nhận lời mời cờ:', {
@@ -169,7 +176,10 @@ export default function App() {
         });
         alert(`Không thể vào phòng ${roomId}: ${transactionAbortReason}`);
         if (latestRoomRejection) {
-          await remove(ref(db, `board_game_invites/${currentUser.username}`));
+          const currentInvite = (await get(inviteRef)).val();
+          if (currentInvite?.game === game && currentInvite?.roomId === roomId) {
+            await remove(inviteRef);
+          }
           setBoardGameInvite(null);
         }
         return;
@@ -186,7 +196,10 @@ export default function App() {
         },
         [`board_games/${game}/lobby/${fromUsername}/status`]: 'dang_dau'
       });
-      await remove(ref(db, `board_game_invites/${currentUser.username}`));
+      const currentInvite = (await get(inviteRef)).val();
+      if (currentInvite?.game === game && currentInvite?.roomId === roomId) {
+        await remove(inviteRef);
+      }
       setBoardGameInvite(null);
       setCurrentScreen(`${gameInfo.screen}_${roomId}`);
     } catch (error) {
