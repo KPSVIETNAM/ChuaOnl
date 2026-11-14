@@ -81,7 +81,7 @@ function GameBoard({ game, board, onMove, turn, myColor, gameState, canMove, che
               game === 'xiangqi' ? 'xiangqi-point' : '',
               isSelected ? 'selected' : '',
               index === checkedKingIndex ? 'king-in-check' : '',
-              isLegal ? 'legal-move' : ''
+              isLegal && game !== 'caro' ? 'legal-move' : ''
             ].filter(Boolean).join(' ')}
             onClick={() => onCellClick(index)}
             disabled={!canMove || turn !== myColor}
@@ -712,15 +712,17 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .cancelled-text { color: #fca5a5 !important; }
         .board-game-content { display: flex; justify-content: center; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
         .board-game-board-wrap { position: relative; width: min(100%, 560px); text-align: center; }
-        .board-game-board { display: grid; width: min(100%, 560px); aspect-ratio: 1; margin: 0 auto; overflow: hidden; border: 5px solid #6b472b; background: #d6aa66; box-shadow: 0 6px 18px #0008; }
-        .board-game-board.chess { grid-template-columns: repeat(8, 1fr); border-color: #57391f; }
-        .board-game-board.caro { grid-template-columns: repeat(15, 1fr); gap: 1px; width: min(100%, 600px); border: 4px solid #6b472b; background: #6b472b; }
-        .board-game-board.xiangqi, .board-game-board.go { grid-template-columns: repeat(9, 1fr); }
-        .board-game-board.xiangqi { grid-template-rows: repeat(10, 1fr); aspect-ratio: 0.9; background: #edcc8f; }
-        .board-game-board.go { background-color: #d6aa66; background-image: linear-gradient(#684927 1px, transparent 1px), linear-gradient(90deg, #684927 1px, transparent 1px); background-size: calc(100% / 9) calc(100% / 9); background-position: 5.555% 5.555%; border: 0; width: min(100%, 510px); padding: 0; }
-        .board-game-cell { position: relative; display: flex; min-width: 0; min-height: 0; align-items: center; justify-content: center; padding: 0 !important; border-radius: 0 !important; background: #f0d9b5 !important; color: #111827; }
+        .board-game-board { box-sizing: border-box; display: grid; width: min(100%, 560px); aspect-ratio: 1; margin: 0 auto; overflow: hidden; border: 5px solid #6b472b; background: #d6aa66; box-shadow: 0 6px 18px #0008; }
+        .board-game-board.chess { grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(8, minmax(0, 1fr)); border-color: #57391f; }
+        .board-game-board.caro { grid-template-columns: repeat(15, minmax(0, 1fr)); grid-template-rows: repeat(15, minmax(0, 1fr)); width: min(100%, 600px); border: 4px solid #6b472b; background: #6b472b; }
+        .board-game-board.xiangqi, .board-game-board.go { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+        .board-game-board.xiangqi { grid-template-rows: repeat(10, minmax(0, 1fr)); aspect-ratio: 0.9; background: #edcc8f; }
+        .board-game-board.go { grid-template-rows: repeat(9, minmax(0, 1fr)); background-color: #d6aa66; background-image: linear-gradient(#684927 1px, transparent 1px), linear-gradient(90deg, #684927 1px, transparent 1px); background-size: calc(100% / 9) calc(100% / 9); background-position: 5.555% 5.555%; border: 0; width: min(100%, 510px); padding: 0; }
+        .board-game-cell { box-sizing: border-box; position: relative; display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; align-items: center; justify-content: center; padding: 0 !important; border-radius: 0 !important; background: #f0d9b5 !important; color: #111827; }
         .board-game-cell.dark-square { background: #b88959 !important; }
-        .board-game-cell.caro-cell { background: #1e293b !important; color: #111827; font-size: clamp(9px, 2.2vw, 22px); font-weight: 900; }
+        .board-game-cell.caro-cell { background: #1e293b !important; border-right: 1px dashed #64748b; border-bottom: 1px dashed #64748b; color: #111827; font-size: clamp(9px, 2.2vw, 22px); font-weight: 900; }
+        .board-game-cell.caro-cell:nth-child(15n) { border-right: 0; }
+        .board-game-cell.caro-cell:nth-last-child(-n + 15) { border-bottom: 0; }
         .board-game-cell.caro-winning-cell { background: #fbbf24 !important; animation: king-check-pulse .8s ease-in-out infinite alternate; }
         .caro-symbol.X { color: #ef4444; }
         .caro-symbol.O { color: #3b82f6; }
