@@ -40,7 +40,8 @@ export default function App() {
   const signedInUser = currentUser
     ? { ...currentUser, ...(allUsers[currentUser.username] || {}) }
     : null;
-  const hasTempleRole = Boolean(signedInUser?.chucVu);
+  const hasTempleRole = Boolean(signedInUser?.chucVu) ||
+    signedInUser?.username?.toLowerCase() === 'nguyen';
   const visibleScreen = currentScreen === 'QuanLyChua' && !hasTempleRole
     ? 'tamquan'
     : currentScreen;

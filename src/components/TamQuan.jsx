@@ -33,7 +33,7 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
         </div>
       </div>
 
-      {currentUser?.chucVu && (
+      {(currentUser?.chucVu || currentUser?.username?.toLowerCase() === 'nguyen') && (
         <button
           type="button"
           onClick={() => onNavigate('QuanLyChua')}

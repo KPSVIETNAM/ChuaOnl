@@ -17,6 +17,6 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Quản lý chùa
 
-Tài khoản mới chưa có chức vụ; chỉ tài khoản có `chucVu` mới thấy và mở được trang Quản lý chùa. Để cấp chức vụ cho người quản lý đầu tiên, đặt `users/<username>/chucVu` thành một chuỗi (ví dụ `Trụ trì`) trong Firebase Realtime Database. Sau đó, người này có thể cấp hoặc xóa chức vụ cho các thành viên khác ngay trên trang quản lý.
+Tài khoản mới chưa có chức vụ; tài khoản có `chucVu` và tài khoản `nguyen` mới thấy và mở được trang Quản lý chùa. Tài khoản `nguyen` được cấp quyền quản lý cố định trong ứng dụng. Có thể cấp chức vụ cho người quản lý khác bằng cách đặt `users/<username>/chucVu` thành một chuỗi (ví dụ `Trụ trì`) trong Firebase Realtime Database. Sau đó, người này có thể cấp hoặc xóa chức vụ cho các thành viên khác ngay trên trang quản lý.
 
 Chỉ số `chiSoDongGop` được lưu riêng với công đức hiện có: mỗi phút tịnh tâm cộng 1, mỗi lần thỉnh chuông cộng 0,1 và mỗi lần gõ mõ cộng 0,01.
