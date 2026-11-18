@@ -89,6 +89,9 @@ export default function App() {
 
     try {
       const roomRef = ref(db, `board_games/${game}/rooms/${roomId}`);
+      const savedCaroBlockRule = game === 'caro'
+        ? (await get(ref(db, `board_games/caro/rule_preferences/${currentUser.username}/${fromUsername}`))).val() === true
+        : false;
       const getJoinRejectionReason = (currentRoom) => {
         if (!currentRoom) return 'Phòng không còn tồn tại.';
         const players = currentRoom?.players || {};
@@ -126,6 +129,7 @@ export default function App() {
           players: joinedPlayers,
           status: 'playing',
           turn: fromUsername,
+          ...(game === 'caro' ? { blockRule: savedCaroBlockRule } : {}),
           winner: null,
           resultReason: null
         };

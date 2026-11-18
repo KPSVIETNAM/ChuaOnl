@@ -195,6 +195,9 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
 
       const newRoomId = `room_${Date.now()}_${username}`;
       const opponent = players[opponentKey];
+      const rulePreference = game === 'caro'
+        ? (await get(ref(db, `${basePath}/rule_preferences/${username}/${opponentKey}`))).val() === true
+        : false;
       await set(ref(db, `${basePath}/rooms/${newRoomId}`), {
         players: {
           [username]: { fullName, symbol: getPlayerColor(game, 0), ready: false },
@@ -202,6 +205,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         },
         board: createInitialBoard(game),
         gameState: getInitialGameState(game),
+        ...(game === 'caro' ? { blockRule: rulePreference } : {}),
         turn: '',
         status: 'waiting',
         chat: {}
@@ -395,7 +399,7 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
   };
 
   const handleToggleRuleRequest = async () => {
-    if (game !== 'caro' || !roomData || !myPlayer) return;
+    if (game !== 'caro' || !roomData || !myPlayer || !opponentName) return;
     const updatedPlayers = {
       ...players,
       [username]: { ...myPlayer, ruleRequest: !myPlayer.ruleRequest }
@@ -407,10 +411,16 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         updatedPlayers[key] = { ...updatedPlayers[key], ruleRequest: false };
       });
     }
-    await update(ref(db, `${basePath}/rooms/${roomId}`), {
-      players: updatedPlayers,
-      ...(allAgreed ? { blockRule: !roomData.blockRule } : {})
-    });
+    const updates = {
+      [`${basePath}/rooms/${roomId}/players`]: updatedPlayers
+    };
+    if (allAgreed) {
+      const blockRule = !roomData.blockRule;
+      updates[`${basePath}/rooms/${roomId}/blockRule`] = blockRule;
+      updates[`${basePath}/rule_preferences/${username}/${opponentName}`] = blockRule;
+      updates[`${basePath}/rule_preferences/${opponentName}/${username}`] = blockRule;
+    }
+    await update(ref(db), updates);
   };
 
   const handleRematch = async () => {
@@ -559,7 +569,20 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
             )}
             {game === 'caro' && playerKeys.length === 2 && (
               <div className="caro-rule-box">
-                <span>Chặn hai đầu: <b>{roomData.blockRule ? 'Bật' : 'Tắt'}</b></span>
+                <span className="caro-rule-label">Chặn hai đầu: <b>{roomData.blockRule ? 'Bật' : 'Tắt'}</b></span>
+                <span className="caro-rule-help">
+                  <button
+                    type="button"
+                    className="caro-rule-help-trigger"
+                    aria-label="Giải thích luật chặn hai đầu"
+                    aria-describedby="caro-rule-tooltip"
+                  >
+                    ?
+                  </button>
+                  <span className="caro-rule-tooltip" id="caro-rule-tooltip" role="tooltip">
+                    Khi bật, đủ 5 quân liên tiếp chưa chắc thắng nếu cả hai đầu bị chặn bởi quân khác hoặc mép bàn. Khi tắt, đủ 5 quân là thắng.
+                  </span>
+                </span>
                 <button type="button" onClick={handleToggleRuleRequest}>
                   {isMyRuleRequest ? '✓ Đã đồng ý' : isOpponentRuleRequest ? 'Đồng ý đổi' : 'Đề xuất đổi'}
                 </button>
@@ -729,6 +752,10 @@ export default function BoardGameRoom({ game, currentUser, activeUsers = {}, roo
         .caro-rule-box { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #e2e8f0; font-size: 12px; }
         .caro-rule-box button { padding: 6px 9px; font-size: 11px; }
         .caro-rule-box small { color: #7dd3fc; }
+        .caro-rule-help { position: relative; }
+        .caro-rule-box .caro-rule-help-trigger { width: 20px; height: 20px; padding: 0; border: 1px solid #94a3b8; border-radius: 50%; background: #1e293b; color: #e2e8f0; line-height: 18px; }
+        .caro-rule-tooltip { position: absolute; z-index: 5; left: 50%; bottom: calc(100% + 8px); width: min(260px, 70vw); padding: 8px 10px; border: 1px solid #64748b; border-radius: 7px; background: #0f172a; color: #e2e8f0; font-size: 12px; line-height: 1.45; text-align: left; box-shadow: 0 4px 12px #0008; opacity: 0; visibility: hidden; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease, visibility .15s; pointer-events: none; }
+        .caro-rule-help:hover .caro-rule-tooltip, .caro-rule-help:focus-within .caro-rule-tooltip { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
         .board-game-board.xiangqi .board-game-cell { background: transparent !important; border: 1px solid #8c6036; }
         .board-game-board.xiangqi .board-game-cell:nth-child(9n + 1) { border-left: 0; }
         .board-game-board.xiangqi .board-game-cell:nth-child(9n) { border-right: 0; }
