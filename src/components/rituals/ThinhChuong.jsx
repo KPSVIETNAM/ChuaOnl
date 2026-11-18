@@ -1,6 +1,7 @@
 import React from 'react';
 import { db } from '../../firebase';
 import { ref, push, update, remove, onDisconnect } from 'firebase/database';
+import { addContribution } from '../contributions';
 
 export default function ThinhChuong({ currentUser, queueList = [], loiNguyetInput = '', setNotice }) {
   const username = currentUser?.username;
@@ -56,6 +57,7 @@ ThinhChuong.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
   const audio = new Audio('/audio/Tiengchuong.mp3');
   audio.currentTime = 0;
   audio.play().catch(() => {});
+  addContribution(username, 0.1).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
 
   const currentIncenseRef = ref(db, 'global_state/currentIncenser');
   onDisconnect(currentIncenseRef).remove();

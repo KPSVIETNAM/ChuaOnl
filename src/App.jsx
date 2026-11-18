@@ -5,6 +5,7 @@ import TamQuan from './components/TamQuan';
 import ChanhDien from './components/ChanhDien'; 
 import TinhTamDien from './components/TinhTamDien';
 import TangKinhCac from './components/TangKinhCac';
+import QuanLyChua from './components/QuanLyChua';
 const CoCaro = lazy(() => import('./components/CoCaro'));
 const CoVua = lazy(() => import('./components/CoVua'));
 const CoTuong = lazy(() => import('./components/CoTuong'));
@@ -36,6 +37,13 @@ export default function App() {
   const [activeUsers, setActiveUsers] = useState({});
   const [allUsers, setAllUsers] = useState({});
   const [logs, setLogs] = useState([]); 
+  const signedInUser = currentUser
+    ? { ...currentUser, ...(allUsers[currentUser.username] || {}) }
+    : null;
+  const hasTempleRole = Boolean(signedInUser?.chucVu);
+  const visibleScreen = currentScreen === 'QuanLyChua' && !hasTempleRole
+    ? 'tamquan'
+    : currentScreen;
 
   const [boardGameInvite, setBoardGameInvite] = useState(null);
 
@@ -44,19 +52,19 @@ export default function App() {
     if (!currentUser?.username) return;
     const userOnlineRef = ref(db, `online_users/${currentUser.username}`);
 
-    const isInBoardGame = currentScreen === 'CoCaro' || currentScreen.startsWith('CoCaro_') ||
-      currentScreen === 'CoVua' || currentScreen.startsWith('CoVua_') ||
-      currentScreen === 'CoTuong' || currentScreen.startsWith('CoTuong_') ||
-      currentScreen === 'covay' || currentScreen.startsWith('covay_');
+    const isInBoardGame = visibleScreen === 'CoCaro' || visibleScreen.startsWith('CoCaro_') ||
+      visibleScreen === 'CoVua' || visibleScreen.startsWith('CoVua_') ||
+      visibleScreen === 'CoTuong' || visibleScreen.startsWith('CoTuong_') ||
+      visibleScreen === 'covay' || visibleScreen.startsWith('covay_');
     update(userOnlineRef, {
       username: currentUser.username,
       fullName: currentUser.fullName || currentUser.username,
       gender: currentUser.gender || 'khac',
-      currentScreen: currentScreen,
+      currentScreen: visibleScreen,
       lastActive: Date.now(),
       ...(!isInBoardGame ? { activeGame: null, gameStatus: null } : {})
     }).catch((err) => console.error("Lỗi cập nhật vị trí:", err));
-  }, [currentScreen, currentUser]);
+  }, [visibleScreen, currentUser]);
 
   useEffect(() => {
     if (!currentUser?.username) return;
@@ -344,12 +352,14 @@ export default function App() {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
   }
 
-  if (currentScreen === 'tamquan') {
+  if (visibleScreen === 'tamquan') {
     return (
       <>
         <TamQuan
-          currentUser={currentUser}
-          onNavigate={(screen) => setCurrentScreen(screen)}
+          currentUser={signedInUser}
+          onNavigate={(screen) => {
+            if (screen !== 'QuanLyChua' || hasTempleRole) setCurrentScreen(screen);
+          }}
           handleLogout={handleLogout}
         />
         {renderBoardGameInvitePopup()}
@@ -398,7 +408,7 @@ export default function App() {
   );
 
   function renderBoardGameInvitePopup() {
-    if (!boardGameInvite || currentScreen === 'TinhTamDien') return null;
+    if (!boardGameInvite || visibleScreen === 'TinhTamDien') return null;
     const gameNames = { caro: 'Caro', chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây' };
     return (
       <div style={{
@@ -418,7 +428,17 @@ export default function App() {
     );
   }
 
-  if (currentScreen === 'chanhdien') {
+  if (visibleScreen === 'QuanLyChua' && hasTempleRole) {
+    return (
+      <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
+        {renderHeader()}
+        <QuanLyChua allUsers={allUsers} />
+        {renderBoardGameInvitePopup()}
+      </div>
+    );
+  }
+
+  if (visibleScreen === 'chanhdien') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
@@ -428,7 +448,7 @@ export default function App() {
     );
   }
 
-  if (currentScreen === 'TinhTamDien') {
+  if (visibleScreen === 'TinhTamDien') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
@@ -438,7 +458,7 @@ export default function App() {
     );
   }
 
-  if (currentScreen === 'TangKinhCac') {
+  if (visibleScreen === 'TangKinhCac') {
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}
@@ -455,11 +475,11 @@ export default function App() {
     { prefix: 'covay', Component: CoVay }
   ];
   const activeBoardGame = boardGameRoutes.find(({ prefix }) =>
-    currentScreen === prefix || currentScreen.startsWith(`${prefix}_`)
+    visibleScreen === prefix || visibleScreen.startsWith(`${prefix}_`)
   );
   if (activeBoardGame) {
     const { prefix, Component } = activeBoardGame;
-    const roomId = currentScreen.startsWith(`${prefix}_`) ? currentScreen.slice(prefix.length + 1) : null;
+    const roomId = visibleScreen.startsWith(`${prefix}_`) ? visibleScreen.slice(prefix.length + 1) : null;
     return (
       <div style={{ padding: '10px', backgroundColor: '#0f172a', minHeight: '100vh', boxSizing: 'border-box', position: 'relative' }}>
         {renderHeader()}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
+import { addContribution } from './contributions';
 
 export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInput = '', setNotice }) {
   const username = currentUser?.username;
@@ -54,6 +55,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     minuteTimerRef.current = setInterval(() => {
       Promise.all([
         runTransaction(ref(db, `users/${username}/totalTinhTamMinutes`), (mins) => (mins || 0) + 1),
+        addContribution(username, 1),
         runTransaction(ref(db, 'global_stats/totalTinhTamMinutesToanCty'), (mins) => (mins || 0) + 1)
       ]).catch((error) => console.error('Lỗi cộng thời gian tịnh tâm:', error));
     }, 60000); // 60.000ms = 1 phút
@@ -129,6 +131,7 @@ export default function TinhTamDien({ currentUser, queueList = [], loiNguyetInpu
     const moAudio = new Audio('/audio/mo.mp3');
     moAudio.currentTime = 0;
     moAudio.play().catch(() => {});
+    addContribution(username, 0.01).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
 
     triggerRippleEffect();
   };
@@ -379,6 +382,7 @@ TinhTamDien.executeRitual = async (username, fullName, loiNguyen, onComplete) =>
   const audio = new Audio('/audio/mo.mp3');
   audio.currentTime = 0;
   audio.play().catch(() => {});
+  addContribution(username, 0.01).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
 
   const currentIncenseRef = ref(db, 'global_state/currentIncenser');
   onDisconnect(currentIncenseRef).remove();

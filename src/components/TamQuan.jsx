@@ -33,6 +33,28 @@ export default function TamQuan({ currentUser, onNavigate, handleLogout }) {
         </div>
       </div>
 
+      {currentUser?.chucVu && (
+        <button
+          type="button"
+          onClick={() => onNavigate('QuanLyChua')}
+          style={{
+            position: 'absolute',
+            top: '78px',
+            right: '30px',
+            zIndex: 10,
+            padding: '8px 12px',
+            background: '#1e293b',
+            color: '#ffdb8a',
+            border: '1px solid #b45309',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          🏯 Quản lý chùa
+        </button>
+      )}
+
       {/* Nút thoát tài khoản */}
       <button 
         onClick={handleLogout} 

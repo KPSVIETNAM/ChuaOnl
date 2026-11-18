@@ -25,6 +25,8 @@ export default function Auth({ onLoginSuccess }) {
       fullName: fullName,
       gender: gender,
       totalCongDuc: 0,
+      chucVu: null,
+      chiSoDongGop: 0,
     };
 
     await set(userRef, newUser);
@@ -42,6 +44,11 @@ export default function Auth({ onLoginSuccess }) {
 
     const userData = snapshot.val();
     if (userData.password !== password) return alert('Sai mật khẩu!');
+    const normalizedUser = {
+      ...userData,
+      chucVu: userData.chucVu || null,
+      chiSoDongGop: Number(userData.chiSoDongGop) || 0,
+    };
 
     const onlineRef = ref(db, `online_users/${cleanUser}`);
     const initialPos = {
@@ -55,9 +62,9 @@ export default function Auth({ onLoginSuccess }) {
     await set(onlineRef, initialPos);
     onDisconnect(onlineRef).remove();
 
-    localStorage.setItem('kps_current_user', JSON.stringify(userData));
+    localStorage.setItem('kps_current_user', JSON.stringify(normalizedUser));
     // Truyền dữ liệu user lên component cha để hiển thị trang Tam Quan
-    onLoginSuccess(userData);
+    onLoginSuccess(normalizedUser);
   };
   
   return (

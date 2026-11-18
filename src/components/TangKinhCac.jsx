@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, push, update, remove, onDisconnect, runTransaction, onValue } from 'firebase/database';
+import { addContribution } from './contributions';
 import VuLanBaohieu from '../../public/book/VuLanBaohieu'; 
 
 export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInput = '', setNotice, onBack }) {
@@ -106,6 +107,7 @@ export default function TangKinhCac({ currentUser, queueList = [], loiNguyetInpu
 
     runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 1);
     runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 1);
+    addContribution(username, 0.01).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
     
     push(ref(db, 'logs'), {
       text: `${fullName} gõ mõ đọc kinh tại Tàng Kinh Các!`,

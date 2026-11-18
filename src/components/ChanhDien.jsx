@@ -16,6 +16,7 @@ import DangHuong from './rituals/DangHuong';
 import DangHoa from './rituals/DangHoa';
 import DenHoaSen from './rituals/DenHoaSen';
 import ThinhChuong from './rituals/ThinhChuong';
+import { addContribution } from './contributions';
 
 
 export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}, logs = [], onBackToTamQuan, onLogout }) {
@@ -161,6 +162,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
 
     runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 1);
     runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 1);
+    addContribution(username, 0.01).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
     push(ref(db, 'logs'), {
       text: `${fullName} gõ mõ tích công đức!`,
       time: new Date().toLocaleTimeString(),
@@ -187,6 +189,7 @@ export default function ChanhDien({ currentUser, activeUsers = {}, allUsers = {}
     // Cộng điểm công đức cá nhân và toàn công ty
     runTransaction(ref(db, `users/${username}/totalCongDuc`), (count) => (count || 0) + 2);
     runTransaction(ref(db, 'global_stats/totalCongDucToanCty'), (count) => (count || 0) + 2);
+    addContribution(username, 0.01).catch((error) => console.error('Lỗi cộng chỉ số đóng góp:', error));
     runTransaction(ref(db, 'global_stats/totalTangKinhToanCty'), (count) => (count || 0) + 1);
 
     // Ghi log nhật ký hoạt động
